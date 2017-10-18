@@ -72,12 +72,13 @@ int main() {
 		struct cmdline *l;
 		char *line=0;
 		int i, j;
-		char *prompt = "ensishell>";
+		char *prompt = "shelou>";
 
 		/* Readline use some internal memory structure that
 		   can not be cleaned at the end of the program. Thus
 		   one memory leak per command seems unavoidable yet */
 		line = readline(prompt);
+		printf("after readline");
 		if (line == 0 || ! strncmp(line,"exit", 4)) {
 			terminate(line);
 		}
