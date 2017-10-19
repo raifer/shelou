@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wait.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -58,6 +59,32 @@ void terminate(char *line) {
 	exit(0);
 }
 
+/*Fonction qui exécute la commande passé en parametre */
+void execute(struct cmdline *l) {
+    char *argv[] = {"sleep", "5", NULL};
+    int status;
+    pid_t result = fork() ;
+    if( result == -1 ) {
+        perror("Erreur lors de la création du processus !");
+        return;
+    }
+    else if( !result ) {
+        perror("avant wait\n");
+        waitpid(result);
+        perror("apres wait\n");
+        /*if(! WIFEXITED(status)) {
+            printf("Probleme lors de la mort du fils\n");
+        }*/
+        //wait ;
+        return ;
+    }
+    else {
+        if ( ! execvp(argv[0],argv)) {
+            printf("Programme non trouvé!\n");
+        }
+        printf("On sort du execvp\n");
+    }
+}
 
 int main() {
         printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
@@ -71,7 +98,7 @@ int main() {
 	while (1) {
 		struct cmdline *l;
 		char *line=0;
-		int i, j;
+		//int i, j;
 		char *prompt = "shelou>";
 
 		/* Readline use some internal memory structure that
@@ -119,16 +146,18 @@ int main() {
 		if (l->in) printf("in: %s\n", l->in);
 		if (l->out) printf("out: %s\n", l->out);
 		if (l->bg) printf("background (&)\n");
-
+        
+        execute(l);
+        printf("Apres execute\n");
 		/* Display each command of the pipe */
-		for (i=0; l->seq[i]!=0; i++) {
+		/*for (i=0; l->seq[i]!=0; i++) {
 			char **cmd = l->seq[i];
 			printf("seq[%d]: ", i);
                         for (j=0; cmd[j]!=0; j++) {
                                 printf("'%s' ", cmd[j]);
                         }
 			printf("\n");
-		}
+		}*/
 	}
 
 }
