@@ -8,7 +8,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wait.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -59,31 +62,36 @@ void terminate(char *line) {
 	exit(0);
 }
 
-/*Fonction qui exécute la commande passé en parametre */
-void execute(struct cmdline *l) {
-    char *argv[] = {"sleep", "5", NULL};
+/*Fonction qui exécute la commande passé en parametre
+ * Retourne -1 si erreur*/
+int execute(struct cmdline *l) {
+    char *argv[] = {"sleep", "3", NULL};
     int status;
-    pid_t result = fork() ;
-    if( result == -1 ) {
-        perror("Erreur lors de la création du processus !");
-        return;
-    }
-    else if( !result ) {
-        perror("avant wait\n");
-        waitpid(result);
-        perror("apres wait\n");
-        /*if(! WIFEXITED(status)) {
-            printf("Probleme lors de la mort du fils\n");
-        }*/
-        //wait ;
-        return ;
-    }
-    else {
-        if ( ! execvp(argv[0],argv)) {
-            printf("Programme non trouvé!\n");
-        }
-        printf("On sort du execvp\n");
-    }
+    pid_t pidChild = fork();
+
+    switch (pidChild) {
+    case -1 :
+    	perror("Erreur lors de la création du processus fils :");
+    	return EXIT_FAILURE;
+    	break;
+
+    	// Child
+    case 0:
+    	execvp(argv[0], argv);
+            perror("Erreur lors de exec : ");
+            abort (); // Envoit le signal SIGABRT au père.
+            break;
+
+            // Father
+    default:
+    	printf("\nLe pid du fils est %d\n", pidChild);
+    	pid_t pid_end = wait(&status);
+    	if (pid_end == -1) {
+    		perror("Wait error :");
+    		return EXIT_FAILURE;
+    	} else printf("Wait à  terminé avec la fin du fils %d\n", pid_end);
+    	    }
+return EXIT_SUCCESS;
 }
 
 int main() {
@@ -105,7 +113,6 @@ int main() {
 		   can not be cleaned at the end of the program. Thus
 		   one memory leak per command seems unavoidable yet */
 		line = readline(prompt);
-		printf("after readline");
 		if (line == 0 || ! strncmp(line,"exit", 4)) {
 			terminate(line);
 		}
@@ -148,7 +155,6 @@ int main() {
 		if (l->bg) printf("background (&)\n");
         
         execute(l);
-        printf("Apres execute\n");
 		/* Display each command of the pipe */
 		/*for (i=0; l->seq[i]!=0; i++) {
 			char **cmd = l->seq[i];
