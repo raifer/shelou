@@ -40,13 +40,13 @@ int question6_executer(char *line)
 
 	/* Remove this line when using parsecmd as it will free it */
 	free(line);
-	
+
 	return 0;
 }
 
 SCM executer_wrapper(SCM x)
 {
-        return scm_from_int(question6_executer(scm_to_locale_stringn(x, 0)));
+	return scm_from_int(question6_executer(scm_to_locale_stringn(x, 0)));
 }
 #endif
 
@@ -57,7 +57,7 @@ void terminate(char *line) {
 	clear_history();
 #endif
 	if (line)
-	  free(line);
+		free(line);
 	printf("exit\n");
 	exit(0);
 }
@@ -65,42 +65,52 @@ void terminate(char *line) {
 /*Fonction qui exécute la commande passé en parametre
  * Retourne -1 si erreur*/
 int execute(struct cmdline *l) {
-    char *argv[] = {"sleep", "3", NULL};
-    int status;
-    pid_t pidChild = fork();
 
-    switch (pidChild) {
-    case -1 :
-    	perror("Erreur lors de la création du processus fils :");
-    	return EXIT_FAILURE;
-    	break;
+	// Variables pour récupérer le status et le pid du fils qui relache le wait() du père.
+	int status;
+	pid_t pidEnd;
 
-    	// Child
-    case 0:
-    	execvp(argv[0], argv);
-            perror("Erreur lors de exec : ");
-            abort (); // Envoit le signal SIGABRT au père.
-            break;
+	pid_t pidChild = fork();
 
-            // Father
-    default:
-    	printf("\nLe pid du fils est %d\n", pidChild);
-    	pid_t pid_end = wait(&status);
-    	if (pid_end == -1) {
-    		perror("Wait error :");
-    		return EXIT_FAILURE;
-    	} else printf("Wait à  terminé avec la fin du fils %d\n", pid_end);
-    	    }
-return EXIT_SUCCESS;
+	switch (pidChild) {
+	case -1 :
+		perror("Erreur lors de la création du processus fils :");
+		return EXIT_FAILURE;
+		break;
+
+		// Child
+	case 0:
+		// execvp : v pour tableau de variable et p pour chercher dans le path.
+		execvp(l->seq[0][0], l->seq[0]);
+		perror("Erreur d'exec");
+		abort (); // Envoit le signal SIGABRT au père.
+		break;
+
+		// Father
+	default:
+		//printf("\nLe pid du fils est %d\n", pidChild);
+		pidEnd = wait(&status);
+		if (pidEnd == -1) {
+			perror("Wait error :");
+			return EXIT_FAILURE;
+		} else {
+			if (WIFEXITED(status)) printf("Le fils %d c'est terminé avec success avec comme code de retour %d\n", pidEnd, WEXITSTATUS(status));
+			else printf("Le fils %d a rencontrer une erreur\n", pidEnd);
+
+			if (WIFSIGNALED(status)) printf("Le fils %d c'est terminé à cause du signal n° %d : %s\n", pidEnd, WTERMSIG(status), strsignal(WTERMSIG(status)));
+		// printf("Wait à  terminé avec la fin du fils %d\n", pid_end);
+		}
+	}
+	return EXIT_SUCCESS;
 }
 
 int main() {
-        printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
+	printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
 
 #if USE_GUILE == 1
-        scm_init_guile();
-        /* register "executer" function in scheme */
-        scm_c_define_gsubr("executer", 1, 0, 0, executer_wrapper);
+	scm_init_guile();
+	/* register "executer" function in scheme */
+	scm_c_define_gsubr("executer", 1, 0, 0, executer_wrapper);
 #endif
 
 	while (1) {
@@ -129,8 +139,8 @@ int main() {
 			sprintf(catchligne, "(catch #t (lambda () %s) (lambda (key . parameters) (display \"mauvaise expression/bug en scheme\n\")))", line);
 			scm_eval_string(scm_from_locale_string(catchligne));
 			free(line);
-                        continue;
-                }
+			continue;
+		}
 #endif
 
 		/* parsecmd free line and set it up to 0 */
@@ -138,12 +148,12 @@ int main() {
 
 		/* If input stream closed, normal termination */
 		if (!l) {
-		  
+
 			terminate(0);
 		}
-		
 
-		
+
+
 		if (l->err) {
 			/* Syntax error, read another command */
 			printf("error: %s\n", l->err);
@@ -153,10 +163,11 @@ int main() {
 		if (l->in) printf("in: %s\n", l->in);
 		if (l->out) printf("out: %s\n", l->out);
 		if (l->bg) printf("background (&)\n");
-        
-        execute(l);
-		/* Display each command of the pipe */
-		/*for (i=0; l->seq[i]!=0; i++) {
+		execute(l);
+
+
+		/* Display each command of the pipe
+		for (i=0; l->seq[i]!=0; i++) {
 			char **cmd = l->seq[i];
 			printf("seq[%d]: ", i);
                         for (j=0; cmd[j]!=0; j++) {
