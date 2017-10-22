@@ -70,40 +70,67 @@ int execute(struct cmdline *l) {
 	int status;
 	pid_t pidEnd;
 
-	pid_t pidChild = fork();
+        if ( !l->bg ) { // Si la champs background n'a pas été modifié
+                        // on doit attendre la mort du processus fils
+	        pid_t pidChild = fork();
 
-	switch (pidChild) {
-	case -1 :
-		perror("Erreur lors de la création du processus fils :");
-		return EXIT_FAILURE;
-		break;
+	        switch (pidChild) {
+	        case -1 :
+	        	perror("Erreur lors de la création du processus fils :");
+	        	return EXIT_FAILURE;
+	        	break;
 
-		// Child
-	case 0:
-		// execvp : v pour tableau de variable et p pour chercher dans le path.
-		execvp(l->seq[0][0], l->seq[0]);
-		perror("Erreur d'exec");
-		abort (); // Envoit le signal SIGABRT au père.
-		break;
+	        	// Child
+	        case 0:
+	        	// execvp : v pour tableau de variable et p pour chercher dans le path.
+	        	execvp(l->seq[0][0], l->seq[0]);
+	        	perror("Erreur d'exec");
+	        	abort (); // Envoit le signal SIGABRT au père.
+	        	break;
 
-		// Father
-	default:
-		//printf("\nLe pid du fils est %d\n", pidChild);
-		pidEnd = wait(&status);
-		if (pidEnd == -1) {
-			perror("Wait error :");
-			return EXIT_FAILURE;
-		} else {
-			if (WIFEXITED(status)) printf("Le fils %d c'est terminé avec success avec comme code de retour %d\n", pidEnd, WEXITSTATUS(status));
-			else printf("Le fils %d a rencontrer une erreur\n", pidEnd);
+	        	// Father
+	        default:
+	        	//printf("\nLe pid du fils est %d\n", pidChild);
+	        	pidEnd = wait(&status);
+	        	if (pidEnd == -1) {
+	        		perror("Wait error :");
+	        		return EXIT_FAILURE;
+	        	} else {
+	        		if (WIFEXITED(status)) printf("Le fils %d c'est terminé avec success avec comme code de retour %d\n", pidEnd, WEXITSTATUS(status));
+	        		else printf("Le fils %d a rencontrer une erreur\n", pidEnd);
 
-			if (WIFSIGNALED(status)) printf("Le fils %d c'est terminé à cause du signal n° %d : %s\n", pidEnd, WTERMSIG(status), strsignal(WTERMSIG(status)));
+	        		if (WIFSIGNALED(status)) printf("Le fils %d c'est terminé à cause du signal n° %d : %s\n", pidEnd, WTERMSIG(status), strsignal(WTERMSIG(status)));
 		// printf("Wait à  terminé avec la fin du fils %d\n", pid_end);
-		}
-	}
-	return EXIT_SUCCESS;
-}
+	        	}
+        	}
+        	return EXIT_SUCCESS;
+        }
+        else { // on lance une tache de fond
+                pid_t pidChild = fork();
 
+	        switch (pidChild) {
+	        case -1 :
+	        	perror("Erreur lors de la création du processus fils :");
+	        	return EXIT_FAILURE;
+	        	break;
+
+	        	// Child
+	        case 0:
+	        	// execvp : v pour tableau de variable et p pour chercher dans le path.
+	        	execvp(l->seq[0][0], l->seq[0]);
+	        	perror("Erreur d'exec");
+	        	abort (); // Envoit le signal SIGABRT au père.
+	        	break;
+
+	        	// Father
+	        default: 
+	        	printf("\nLe pid du fils est %d\n", pidChild);
+                        break;
+        	}
+        	return EXIT_SUCCESS;         
+
+        }
+}
 int main() {
 	printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
 
