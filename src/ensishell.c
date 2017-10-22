@@ -61,7 +61,6 @@ void terminate(char *line) {
 	printf("exit\n");
 	exit(0);
 }
-
 /*Fonction qui exécute la commande passé en parametre
  * Retourne -1 si erreur*/
 int execute(struct cmdline *l) {
@@ -91,7 +90,7 @@ int execute(struct cmdline *l) {
 	        	// Father
 	        default:
 	        	//printf("\nLe pid du fils est %d\n", pidChild);
-	        	pidEnd = wait(&status);
+	        	pidEnd = waitpid(pidChild,&status,0);
 	        	if (pidEnd == -1) {
 	        		perror("Wait error :");
 	        		return EXIT_FAILURE;
@@ -145,7 +144,7 @@ int main() {
 		char *line=0;
 		//int i, j;
 		char *prompt = "shelou>";
-                static int nombreBG = 1; // varaible qui va stocker ke nb 
+                int nombreBG = 1; // variable qui va stocker ke nb 
                                      //d'appels en arrière-plan
 
 
@@ -195,10 +194,10 @@ int main() {
 		//if (l->bg) printf("background (&)\n");
 		if (l->bg) printf("[%d] ",nombreBG++);
 		execute(l);
+                
 
-
-		/* Display each command of the pipe
-		for (i=0; l->seq[i]!=0; i++) {
+		// Display each command of the pipe
+		/*for (i=0; l->seq[i]!=0; i++) {
 			char **cmd = l->seq[i];
 			printf("seq[%d]: ", i);
                         for (j=0; cmd[j]!=0; j++) {
@@ -207,5 +206,4 @@ int main() {
 			printf("\n");
 		}*/
 	}
-
 }
