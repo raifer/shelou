@@ -101,9 +101,9 @@ int execute(struct cmdline *l) {
 
 	        		if (WIFSIGNALED(status)) printf("Le fils %d c'est terminé à cause du signal n° %d : %s\n", pidEnd, WTERMSIG(status), strsignal(WTERMSIG(status)));
 		// printf("Wait à  terminé avec la fin du fils %d\n", pid_end);
-	        	}
+        	                return EXIT_SUCCESS;
+                	}
         	}
-        	return EXIT_SUCCESS;
         }
         else { // on lance une tache de fond
                 pid_t pidChild = fork();
@@ -124,13 +124,13 @@ int execute(struct cmdline *l) {
 
 	        	// Father
 	        default: 
-	        	printf("\nLe pid du fils est %d\n", pidChild);
+	        	printf(" %d\n", pidChild);
                         break;
         	}
         	return EXIT_SUCCESS;         
-
         }
 }
+
 int main() {
 	printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
 
@@ -145,6 +145,9 @@ int main() {
 		char *line=0;
 		//int i, j;
 		char *prompt = "shelou>";
+                static int nombreBG = 1; // varaible qui va stocker ke nb 
+                                     //d'appels en arrière-plan
+
 
 		/* Readline use some internal memory structure that
 		   can not be cleaned at the end of the program. Thus
@@ -189,7 +192,8 @@ int main() {
 
 		if (l->in) printf("in: %s\n", l->in);
 		if (l->out) printf("out: %s\n", l->out);
-		if (l->bg) printf("background (&)\n");
+		//if (l->bg) printf("background (&)\n");
+		if (l->bg) printf("[%d] ",nombreBG++);
 		execute(l);
 
 
