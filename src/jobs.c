@@ -24,7 +24,7 @@ List *list = create_liste(jobs);
 if (list){
         list->next = old;
         list->previous = NULL;
-        old->previous = list;
+        if (old != NULL) old->previous = list;
 }
 return list;
 }
@@ -47,7 +47,7 @@ void create_job(pid_t pid, char *cmd, int id, List **jobs) {
         Job *j = malloc(sizeof(Job));
         j->pid = pid;
         j->id = id;
-        strncpy(j->cmd, cmd, CMD_MAX);
+        j->cmd = cmd;
         *jobs = list_prepend(*jobs, j); 
 }
 
@@ -72,7 +72,7 @@ void print_jobs(List *jobs){
 		printf("No job\n");
 		return;}
 	while(jobs != NULL) {
-		printf("[%d] : %s\n", jobs->job->id, jobs->job->cmd);
+		printf("[%d] pid %d    %s\n", jobs->job->id, jobs->job->pid, jobs->job->cmd);
 		jobs = jobs->next;
 	}
 }
