@@ -140,6 +140,9 @@ int main() {
 	scm_c_define_gsubr("executer", 1, 0, 0, executer_wrapper);
 #endif
 
+	// List chaînée des jobs.
+	                List *jobs = NULL;
+
 	while (1) {
 		struct cmdline *l;
 		char *line=0;
@@ -147,8 +150,6 @@ int main() {
 
 		// nb d'appels en arrière-plan (pour affichage)
                 int nombreBG = 1;
-                // List chaînée des jobs.
-                List *jobs = NULL;
                 // pid du fils dans le cas d'un jobs
                 pid_t pid;
 
@@ -157,8 +158,17 @@ int main() {
 		   one memory leak per command seems unavoidable yet */
 		line = readline(prompt);
 
+
+		// Si erreur ou mots clef exit
 		if (line == 0 || ! strncmp(line,"exit", 4)) {
 			terminate(line);
+		}
+
+		// Si aucune commande a été entrée.
+		if (line[0] == 0){
+			//printf("pas de commande\n");
+			free(line);
+			continue;
 		}
 
 #if USE_GNU_READLINE == 1
@@ -210,16 +220,7 @@ int main() {
 					printf("[%d] ",nombreBG++);
 							create_job(pid, line, nombreBG, &jobs);
 						}
-
-
-		// Display each command of the pipe
-		/*for (i=0; l->seq[i]!=0; i++) {
-			char **cmd = l->seq[i];
-			printf("seq[%d]: ", i);
-                        for (j=0; cmd[j]!=0; j++) {
-                                printf("'%s' ", cmd[j]);
-                        }
-			printf("\n");
-		}*/
-	}
+free(line);
+	} // end while
+	free_list(jobs);
 }
