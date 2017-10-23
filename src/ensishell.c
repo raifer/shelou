@@ -70,8 +70,6 @@ int execute(struct cmdline *l) {
 	int status;
 	pid_t pidEnd;
 
-        if ( !l->bg ) { // Si la champs background n'a pas été modifié
-                        // on doit attendre la mort du processus fils
 	        pid_t pidChild = fork();
 
 	        switch (pidChild) {
@@ -91,6 +89,8 @@ int execute(struct cmdline *l) {
 	        	// Father
 	        default:
 	        	//printf("\nLe pid du fils est %d\n", pidChild);
+	        	// Si demande de background on attend pas la fin du fils
+	        	if (l->bg) return pidChild;
 	        	pidEnd = waitpid(pidChild,&status,0);
 	        	if (pidEnd == -1) {
 	        		perror("Wait error :");
@@ -102,34 +102,9 @@ int execute(struct cmdline *l) {
 	        		if (WIFSIGNALED(status)) printf("Le fils %d c'est terminé à cause du signal n° %d : %s\n", pidEnd, WTERMSIG(status), strsignal(WTERMSIG(status)));
 		// printf("Wait à  terminé avec la fin du fils %d\n", pid_end);
         	                return EXIT_SUCCESS;
-                	}
         	}
         }
-        else { // on lance une tache de fond
-                pid_t pidChild = fork();
-
-	        switch (pidChild) {
-	        case -1 :
-	        	perror("Erreur lors de la création du processus fils :");
-	        	return EXIT_FAILURE;
-	        	break;
-
-	        	// Child
-	        case 0:
-	        	// execvp : v pour tableau de variable et p pour chercher dans le path.
-	        	execvp(l->seq[0][0], l->seq[0]);
-	        	perror("Erreur d'exec");
-	        	abort (); // Envoit le signal SIGABRT au père.
-	        	break;
-
-	        	// Father
-	        default: 
-	        	printf(" %d\n", pidChild);
-                        break;
-        	}
-        	return EXIT_SUCCESS;         
         }
-}
 
 int main() {
 	printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
@@ -215,8 +190,8 @@ int main() {
 		if (l->out) printf("out: %s\n", l->out);
 
 		pid = execute(l);
-                
-		if(l->bg && pid > 0) {
+                printf("result : %d\n", pid);
+                		if(l->bg && pid > 0) {
 					printf("[%d] ",nombreBG++);
 							create_job(pid, line, nombreBG, &jobs);
 						}
