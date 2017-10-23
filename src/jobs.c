@@ -14,7 +14,7 @@ List *create_liste(Job *job) {
         if (list && job) {
         list->previous = NULL;
         list->next = NULL;
-        list->jobs = job;
+        list->job = job;
         }
 return list;   
 }
@@ -61,7 +61,18 @@ void free_list(List *liste) {
 }
 
 void free_elem(List *p_liste) {
-        free(p_liste->jobs->cmd);
-        free(p_liste->jobs);
+        free(p_liste->job->cmd);
+        free(p_liste->job);
         free(p_liste);
+}
+
+
+void print_jobs(List *jobs){
+	if (jobs == NULL){
+		printf("No job\n");
+		return;}
+	while(jobs != NULL) {
+		printf("[%d] : %s\n", jobs->job->id, jobs->job->cmd);
+		jobs = jobs->next;
+	}
 }

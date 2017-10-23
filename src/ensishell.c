@@ -15,6 +15,7 @@
 
 #include "variante.h"
 #include "readcmd.h"
+#include "jobs.h"
 
 #ifndef VARIANTE
 #error "Variante non défini !!"
@@ -142,16 +143,20 @@ int main() {
 	while (1) {
 		struct cmdline *l;
 		char *line=0;
-		//int i, j;
 		char *prompt = "shelou>";
-                int nombreBG = 1; // variable qui va stocker ke nb 
-                                     //d'appels en arrière-plan
 
+		// nb d'appels en arrière-plan (pour affichage)
+                int nombreBG = 1;
+                // List chaînée des jobs.
+                List *jobs = NULL;
+                // pid du fils dans le cas d'un jobs
+                pid_t pid;
 
 		/* Readline use some internal memory structure that
 		   can not be cleaned at the end of the program. Thus
 		   one memory leak per command seems unavoidable yet */
 		line = readline(prompt);
+
 		if (line == 0 || ! strncmp(line,"exit", 4)) {
 			terminate(line);
 		}
@@ -160,6 +165,13 @@ int main() {
 		add_history(line);
 #endif
 
+
+		// Si la commande jobs est appelé
+		if (line[0] == 'j') {
+			print_jobs(jobs);
+			free(line);
+			continue;
+		}
 
 #if USE_GUILE == 1
 		/* The line is a scheme command */
@@ -191,10 +203,14 @@ int main() {
 
 		if (l->in) printf("in: %s\n", l->in);
 		if (l->out) printf("out: %s\n", l->out);
-		//if (l->bg) printf("background (&)\n");
-		if (l->bg) printf("[%d] ",nombreBG++);
-		execute(l);
+
+		pid = execute(l);
                 
+		if(l->bg && pid > 0) {
+					printf("[%d] ",nombreBG++);
+							create_job(pid, line, nombreBG, &jobs);
+						}
+
 
 		// Display each command of the pipe
 		/*for (i=0; l->seq[i]!=0; i++) {

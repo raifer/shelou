@@ -3,23 +3,27 @@
 
 #include <sys/types.h>
 #include <stdint.h>
+
 /* Structure to save commands, used by intern command jobs */
-typedef struct S_List List;
 typedef struct S_job Job;
 struct S_job {
         char *cmd;	/* If not null : name of command written */
-        uint16_t id;       /* Save the number of the call-system in background */ 
+        uint16_t id;       /* Save the number of the call-system in background */
 	pid_t pid;	/* Save the pid of process*/
 } ;
-struct S_list{
+
+typedef struct S_List List;
+struct S_List{
 	List *next;
         List *previous;
-        Job *jobs;
+        Job *job;
 } ;
+
+
 
 /*fonction pour la liste*/
 void free_list(List *liste);
 void create_job(pid_t pid, char *cmd, int id, List **jobs);
-//void print_jobs(struct cmdjobs j) ;
+void print_jobs(List *jobs);
 
 #endif
