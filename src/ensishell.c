@@ -190,10 +190,9 @@ int main() {
 		if (l->out) printf("out: %s\n", l->out);
 
 		pid = execute(l);
-                printf("result : %d\n", pid);
                 		if(l->bg && pid > 0) {
-					printf("[%d] ",nombreBG++);
-							create_job(pid, line, nombreBG, &jobs);
+					printf("[%d]\n",nombreBG++);
+							//create_job(pid, line, nombreBG, &jobs);
 						}
 free(line);
 	} // end while
