@@ -97,6 +97,7 @@ configure_file (
 # shell il faut les ajouter ici
 ##
 add_executable(ensishell src/readcmd.c src/ensishell.c)
+add_executable(testjobs src/jobs.c src/testjobs.c)
 target_link_libraries(ensishell ${READLINE_LDFLAGS} ${GUILE_LDFLAGS})
 
 ##
