@@ -154,7 +154,7 @@ int main() {
 		//if (line[0] == 'j') { 
         //La commande ci -dessous est plus correcte, car sinon on affiche
         //quand-meme la commande jobs en tapant seulement j
-        if (! strcncmp(line, "jobs", 4)){ 
+        if (! strncmp(line, "jobs", 4)){ 
 			print_jobs(jobs); 
 			free(line);
 			continue;
@@ -172,9 +172,9 @@ int main() {
 #endif
 
 		// Copy de la commande pour ne pas la perdre dans parse
-		//				char *cmd = malloc(strlen(line));
-		//				cmd = strncpy(cmd, line, 200);
-		char *cmd = "cmd generic";
+		//char *cmd = NULL ; 
+       // cmd = strcpy(cmd, line);
+		//char *cmd = "cmd generic";
 
 		/* parsecmd free line and set it up to 0 */
 		l = parsecmd( & line);
@@ -199,10 +199,27 @@ int main() {
 
 		pid = execute(l);
 		if(l->bg && pid > 0) {
-			printf("[%d]\n",nombreBG);
+            char cmd[200] ; 
+            for (int i = 0; l->seq[i]!=0; i++) {
+                char **cat = l->seq[i];
+                for( int j = 0; cat[j]!=0; j++) {
+                    if ( j == 0){
+                         strcpy(cmd, cat[j]); //on copie le premier mot
+                    }
+                    else {
+                        strcat(cmd," "); //on ajoute un espace pour separ
+                                         //les mots 
+                        strcat(cmd, cat[j]);//on complete la contenation
+                    }
+                }
+                strcat(cmd," &"); //par defaut le caractere n'apparait
+                                  //pour une representation fidele, ajout
+                                  //a la main du caracte &
+			    printf("[%d], %s\n",nombreBG, cmd);
+            }
 			create_job(pid, cmd, nombreBG, &jobs);
 			nombreBG++;
-		}// else free(cmd); // on a pas besoin de conserver cmd.
+        } //else free(cmd); // on a pas besoin de conserver cmd.
 	} // end while
 	free_list(jobs);
 }
