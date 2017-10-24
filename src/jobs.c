@@ -14,7 +14,7 @@ List *create_liste(Job *job) {
         if (list && job) {
         list->previous = NULL;
         list->next = NULL;
-        list->jobs = job;
+        list->job = job;
         }
 return list;   
 }
@@ -24,7 +24,7 @@ List *list = create_liste(jobs);
 if (list){
         list->next = old;
         list->previous = NULL;
-        old->previous = list;
+        if (old != NULL) old->previous = list;
 }
 return list;
 }
@@ -47,7 +47,7 @@ void create_job(pid_t pid, char *cmd, int id, List **jobs) {
         Job *j = malloc(sizeof(Job));
         j->pid = pid;
         j->id = id;
-        strncpy(j->cmd, cmd, CMD_MAX);
+        j->cmd = cmd;
         *jobs = list_prepend(*jobs, j); 
 }
 
@@ -61,7 +61,18 @@ void free_list(List *liste) {
 }
 
 void free_elem(List *p_liste) {
-        free(p_liste->jobs->cmd);
-        free(p_liste->jobs);
+        free(p_liste->job->cmd);
+        free(p_liste->job);
         free(p_liste);
+}
+
+
+void print_jobs(List *jobs){
+	if (jobs == NULL){
+		printf("No job\n");
+		return;}
+	while(jobs != NULL) {
+		printf("[%d] pid %d    %s\n", jobs->job->id, jobs->job->pid, jobs->job->cmd);
+		jobs = jobs->next;
+	}
 }

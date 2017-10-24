@@ -96,9 +96,10 @@ configure_file (
 # Si vous utilisez plusieurs fichiers, en plus de ensishell.c, pour votre
 # shell il faut les ajouter ici
 ##
-add_executable(ensishell src/readcmd.c src/ensishell.c)
-add_executable(testjobs src/jobs.c src/testjobs.c)
+add_executable(ensishell src/readcmd.c src/ensishell.c src/jobs.c)
+#add_executable(testjobs src/jobs.c src/testjobs.c src/readcmd.c)
 target_link_libraries(ensishell ${READLINE_LDFLAGS} ${GUILE_LDFLAGS})
+#target_link_libraries(testjobs ${READLINE_LDFLAGS} ${GUILE_LDFLAGS})
 
 ##
 # Programme de test

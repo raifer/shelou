@@ -15,6 +15,7 @@
 
 #include "variante.h"
 #include "readcmd.h"
+#include "jobs.h"
 
 #ifndef VARIANTE
 #error "Variante non défini !!"
@@ -69,65 +70,40 @@ int execute(struct cmdline *l) {
 	int status;
 	pid_t pidEnd;
 
-        if ( !l->bg ) { // Si la champs background n'a pas été modifié
-                        // on doit attendre la mort du processus fils
-	        pid_t pidChild = fork();
+	pid_t pidChild = fork();
 
-	        switch (pidChild) {
-	        case -1 :
-	        	perror("Erreur lors de la création du processus fils :");
-	        	return EXIT_FAILURE;
-	        	break;
+	switch (pidChild) {
+	case -1 :
+		perror("Erreur lors de la création du processus fils :");
+		return EXIT_FAILURE;
+		break;
 
-	        	// Child
-	        case 0:
-	        	// execvp : v pour tableau de variable et p pour chercher dans le path.
-	        	execvp(l->seq[0][0], l->seq[0]);
-	        	perror("Erreur d'exec");
-	        	abort (); // Envoit le signal SIGABRT au père.
-	        	break;
+		// Child
+	case 0:
+		// execvp : v pour tableau de variable et p pour chercher dans le path.
+		execvp(l->seq[0][0], l->seq[0]);
+		perror("Erreur d'exec");
+		abort (); // Envoit le signal SIGABRT au père.
+		break;
 
-	        	// Father
-	        default:
-	        	//printf("\nLe pid du fils est %d\n", pidChild);
-	        	pidEnd = waitpid(pidChild,&status,0);
-	        	if (pidEnd == -1) {
-	        		perror("Wait error :");
-	        		return EXIT_FAILURE;
-	        	} else {
-	        		if (WIFEXITED(status)) printf("Le fils %d c'est terminé avec success avec comme code de retour %d\n", pidEnd, WEXITSTATUS(status));
-	        		else printf("Le fils %d a rencontrer une erreur\n", pidEnd);
+		// Father
+	default:
+		//printf("\nLe pid du fils est %d\n", pidChild);
+		// Si demande de background on attend pas la fin du fils
+		if (l->bg) return pidChild;
+		pidEnd = waitpid(pidChild,&status,0);
+		if (pidEnd == -1) {
+			perror("Wait error :");
+			return EXIT_FAILURE;
+		} else {
+			if (WIFEXITED(status)) printf("Le fils %d c'est terminé avec success avec comme code de retour %d\n", pidEnd, WEXITSTATUS(status));
+			else printf("Le fils %d a rencontrer une erreur\n", pidEnd);
 
-	        		if (WIFSIGNALED(status)) printf("Le fils %d c'est terminé à cause du signal n° %d : %s\n", pidEnd, WTERMSIG(status), strsignal(WTERMSIG(status)));
-		// printf("Wait à  terminé avec la fin du fils %d\n", pid_end);
-        	                return EXIT_SUCCESS;
-                	}
-        	}
-        }
-        else { // on lance une tache de fond
-                pid_t pidChild = fork();
-
-	        switch (pidChild) {
-	        case -1 :
-	        	perror("Erreur lors de la création du processus fils :");
-	        	return EXIT_FAILURE;
-	        	break;
-
-	        	// Child
-	        case 0:
-	        	// execvp : v pour tableau de variable et p pour chercher dans le path.
-	        	execvp(l->seq[0][0], l->seq[0]);
-	        	perror("Erreur d'exec");
-	        	abort (); // Envoit le signal SIGABRT au père.
-	        	break;
-
-	        	// Father
-	        default: 
-	        	printf(" %d\n", pidChild);
-                        break;
-        	}
-        	return EXIT_SUCCESS;         
-        }
+			if (WIFSIGNALED(status)) printf("Le fils %d c'est terminé à cause du signal n° %d : %s\n", pidEnd, WTERMSIG(status), strsignal(WTERMSIG(status)));
+			// printf("Wait à  terminé avec la fin du fils %d\n", pid_end);
+			return EXIT_SUCCESS;
+		}
+	}
 }
 
 int main() {
@@ -139,27 +115,47 @@ int main() {
 	scm_c_define_gsubr("executer", 1, 0, 0, executer_wrapper);
 #endif
 
+	// List chaînée des jobs.
+	List *jobs = NULL;
+	// nb d'appels en arrière-plan (pour affichage)
+	int nombreBG = 1;
+
 	while (1) {
 		struct cmdline *l;
 		char *line=0;
-		//int i, j;
 		char *prompt = "shelou>";
-                int nombreBG = 1; // variable qui va stocker ke nb 
-                                     //d'appels en arrière-plan
 
+		// pid du fils dans le cas d'un jobs
+		pid_t pid;
 
 		/* Readline use some internal memory structure that
 		   can not be cleaned at the end of the program. Thus
 		   one memory leak per command seems unavoidable yet */
 		line = readline(prompt);
+
+		// Si erreur ou mots clef exit
 		if (line == 0 || ! strncmp(line,"exit", 4)) {
 			terminate(line);
+		}
+
+		// Si aucune commande a été entrée.
+		if (line[0] == 0){
+			//printf("pas de commande\n");
+			free(line);
+			continue;
 		}
 
 #if USE_GNU_READLINE == 1
 		add_history(line);
 #endif
 
+
+		// Si la commande jobs est appelé
+		if (line[0] == 'j') {
+			print_jobs(jobs);
+			free(line);
+			continue;
+		}
 
 #if USE_GUILE == 1
 		/* The line is a scheme command */
@@ -172,12 +168,17 @@ int main() {
 		}
 #endif
 
+		// Copy de la commande pour ne pas la perdre dans parse
+		//				char *cmd = malloc(strlen(line));
+		//				cmd = strncpy(cmd, line, 200);
+		char *cmd = "cmd generic";
+
 		/* parsecmd free line and set it up to 0 */
 		l = parsecmd( & line);
 
 		/* If input stream closed, normal termination */
 		if (!l) {
-
+			//free(cmd);
 			terminate(0);
 		}
 
@@ -186,24 +187,19 @@ int main() {
 		if (l->err) {
 			/* Syntax error, read another command */
 			printf("error: %s\n", l->err);
+			//free(cmd);
 			continue;
 		}
 
 		if (l->in) printf("in: %s\n", l->in);
 		if (l->out) printf("out: %s\n", l->out);
-		//if (l->bg) printf("background (&)\n");
-		if (l->bg) printf("[%d] ",nombreBG++);
-		execute(l);
-                
 
-		// Display each command of the pipe
-		/*for (i=0; l->seq[i]!=0; i++) {
-			char **cmd = l->seq[i];
-			printf("seq[%d]: ", i);
-                        for (j=0; cmd[j]!=0; j++) {
-                                printf("'%s' ", cmd[j]);
-                        }
-			printf("\n");
-		}*/
-	}
+		pid = execute(l);
+		if(l->bg && pid > 0) {
+			printf("[%d]\n",nombreBG);
+			create_job(pid, cmd, nombreBG, &jobs);
+			nombreBG++;
+		}// else free(cmd); // on a pas besoin de conserver cmd.
+	} // end while
+	free_list(jobs);
 }
