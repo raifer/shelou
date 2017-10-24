@@ -151,8 +151,11 @@ int main() {
 
 
 		// Si la commande jobs est appelé
-		if (line[0] == 'j') {
-			print_jobs(jobs);
+		//if (line[0] == 'j') { 
+        //La commande ci -dessous est plus correcte, car sinon on affiche
+        //quand-meme la commande jobs en tapant seulement j
+        if (! strcncmp(line, "jobs", 4)){ 
+			print_jobs(jobs); 
 			free(line);
 			continue;
 		}
