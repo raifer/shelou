@@ -122,7 +122,8 @@ int main() {
 
 	while (1) {
 		struct cmdline *l;
-		char *line=0;
+		char *line=NULL;
+		char *cmd = NULL;
 		char *prompt = "shelou>";
 
 		// pid du fils dans le cas d'un jobs
@@ -190,7 +191,6 @@ int main() {
 		if (l->err) {
 			/* Syntax error, read another command */
 			printf("error: %s\n", l->err);
-			//free(cmd);
 			continue;
 		}
 
@@ -198,28 +198,24 @@ int main() {
 		if (l->out) printf("out: %s\n", l->out);
 
 		pid = execute(l);
+
 		if(l->bg && pid > 0) {
-            char cmd[200] ; 
+            cmd = calloc(200, sizeof(char));
             for (int i = 0; l->seq[i]!=0; i++) {
-                char **cat = l->seq[i];
-                for( int j = 0; cat[j]!=0; j++) {
-                    if ( j == 0){
-                         strcpy(cmd, cat[j]); //on copie le premier mot
-                    }
-                    else {
-                        strcat(cmd," "); //on ajoute un espace pour separ
-                                         //les mots 
-                        strcat(cmd, cat[j]);//on complete la contenation
+                char **prg = l->seq[i];
+                if (i>0) strcat(cmd, "| ");
+                for( int j = 0; prg[j]!=0; j++) {
+                	strcat(cmd, prg[j]);
+                        strcat(cmd, " ");
                     }
                 }
-                strcat(cmd," &"); //par defaut le caractere n'apparait
-                                  //pour une representation fidele, ajout
-                                  //a la main du caracte &
+            // Ajout de & à la fin de la comande.
+                strcat(cmd, "&");
 			    printf("[%d], %s\n",nombreBG, cmd);
             }
-			create_job(pid, cmd, nombreBG, &jobs);
+		create_job(pid, cmd, nombreBG, &jobs);
 			nombreBG++;
-        } //else free(cmd); // on a pas besoin de conserver cmd.
+
 	} // end while
 	free_list(jobs);
 }
