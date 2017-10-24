@@ -47,7 +47,8 @@ void create_job(pid_t pid, char *cmd, int id, List **jobs) {
         Job *j = malloc(sizeof(Job));
         j->pid = pid;
         j->id = id;
-        j->cmd = cmd;
+        strcpy(j->cmd, cmd);//ATTENTION avec des char* interdit de faire
+                            // j->cmd = cmd
         *jobs = list_prepend(*jobs, j); 
 }
 
