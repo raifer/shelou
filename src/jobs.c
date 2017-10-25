@@ -47,8 +47,8 @@ void create_job(pid_t pid, char *cmd, int id, List **jobs) {
         Job *j = malloc(sizeof(Job));
         j->pid = pid;
         j->id = id;
-        strcpy(j->cmd, cmd);//ATTENTION avec des char* interdit de faire
-                            // j->cmd = cmd
+        // cmd pointe vers un espace mémoire crée dans le main et sera libéré dans freeElem()
+        j->cmd = cmd;
         *jobs = list_prepend(*jobs, j); 
 }
 
