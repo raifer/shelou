@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #include "jobs.h"
 
@@ -28,8 +29,8 @@ if (list){
 }
 return list;
 }
-
-void del_jobs(List **p_liste) {
+// Supprime un élément de la liste et recole les morceaux.
+void del_elem(List **p_liste) {
 if (! (*p_liste)->previous) { //premier elem de la liste
         List *list_return = (*p_liste)->next;
         free_elem(*p_liste);
@@ -73,7 +74,45 @@ void print_jobs(List *jobs){
 		printf("No job\n");
 		return;}
 	while(jobs != NULL) {
-		printf("[%d] pid %d    %s\n", jobs->job->id, jobs->job->pid, jobs->job->cmd);
+		int status = 0;
+		pid_t pid = waitpid(jobs->job->pid, &status, WNOHANG);
+		switch (pid) {
+		case -1 :
+			/* Erreur, le fils n'éxiste plus et il n'y a pas de signal en attentes.
+			 * On supprime le job de la liste
+			 */
+			printf("debug case -1 : On supprime le job %d\n", jobs->job->id);
+//			perror("Wait error :");
+del_elem(&jobs);
+break;
+		case 0 :
+			/* Le pid n'a pas changé d'état depuis la dernière fois.
+			 * On le considère actif.
+			 */
+			printf("[%d] pid %d | %s | Running\n", jobs->job->id, jobs->job->pid, jobs->job->cmd);
+			break;
+
+		default :
+			/* Le fils à changé de status.
+			 */
+			// si le fils s'est terminé normalement,
+			if (WIFEXITED(status)) {
+				printf("[%d] pid %d | %s | Finish with code %d\n",
+						jobs->job->id,
+						 jobs->job->pid,
+						 jobs->job->cmd,
+						 WEXITSTATUS(status));
+			}
+			// si le fils s'est terminé à cause d'un signal.
+			if (WIFSIGNALED(status))
+			printf("[%d] pid %d | %s | Finish with error - signal n°%d: %s\n",
+									jobs->job->id,
+									 jobs->job->pid,
+									 jobs->job->cmd,
+									 WTERMSIG(status),
+									 strsignal(WTERMSIG(status)));
+		}
+// Passage au job suivant.
 		jobs = jobs->next;
 	}
 }
