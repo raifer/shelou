@@ -8,7 +8,6 @@
 #define CMD_MAX 200
 
 void free_elem(List *p_liste) ;
-void free_elem(List *p_liste) ;
 
 List *create_liste(Job *job) {
         List *list = malloc(sizeof(list));
