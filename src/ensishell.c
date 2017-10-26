@@ -57,6 +57,7 @@ void terminate(char *line) {
 	/* rl_clear_history() does not exist yet in centOS 6 */
 	clear_history();
 #endif
+	if (jobs) free_list(jobs);
 	if (line)
 		free(line);
 	printf("exit\n");
@@ -217,5 +218,5 @@ int main() {
 			nombreBG++;
 
 	} // end while
-	free_list(jobs);
+
 }
