@@ -30,7 +30,10 @@ return list;
 }
 // Supprime un élément de la liste et recole les morceaux.
 void del_elem(List **p_liste) {
-if (! (*p_liste)->previous) { //premier elem de la liste
+	printf("debug : On entre dans del_elem");
+	//si premier elem de la liste
+if ((*p_liste)->previous == NULL) {
+	printf("debug : on supp le premier elem de la liste");
         List *list_return = (*p_liste)->next;
         free_elem(*p_liste);
         *p_liste = list_return ;
@@ -68,12 +71,15 @@ void free_elem(List *p_liste) {
 }
 
 
-void print_jobs(List *jobs){
-	if (jobs == NULL){
+void print_jobs(List **p_jobs){
+	if (*p_jobs == NULL){
 		printf("No job\n");
 		return;}
+	List *jobs = *p_jobs;
 	while(jobs != NULL) {
 		int status = 0;
+
+		// Fetch Status of child
 		pid_t pid = waitpid(jobs->job->pid, &status, WNOHANG);
 		switch (pid) {
 		case -1 :
@@ -82,13 +88,19 @@ void print_jobs(List *jobs){
 			 */
 			printf("debug case -1 : On supprime le job %d\n", jobs->job->id);
 //			perror("Wait error :");
-del_elem(&jobs);
+			// Si on est sur le premier elem
+			if (*p_jobs == jobs){
+del_elem(p_jobs);
+jobs = *p_jobs;
+			} else del_elem(&jobs);
+
 break;
 		case 0 :
 			/* Le pid n'a pas changé d'état depuis la dernière fois.
 			 * On le considère actif.
 			 */
 			printf("[%d] pid %d | %s | Running\n", jobs->job->id, jobs->job->pid, jobs->job->cmd);
+			jobs = jobs->next;
 			break;
 
 		default :
@@ -103,15 +115,16 @@ break;
 						 WEXITSTATUS(status));
 			}
 			// si le fils s'est terminé à cause d'un signal.
-			if (WIFSIGNALED(status))
+			if (WIFSIGNALED(status)) {
 			printf("[%d] pid %d | %s | Finish with error - signal n°%d: %s\n",
 									jobs->job->id,
 									 jobs->job->pid,
 									 jobs->job->cmd,
 									 WTERMSIG(status),
 									 strsignal(WTERMSIG(status)));
+			}
+			// Passage au job suivant
+			jobs = jobs->next;
 		}
-// Passage au job suivant.
-		jobs = jobs->next;
 	}
 }

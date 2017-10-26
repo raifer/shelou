@@ -157,7 +157,7 @@ int main() {
         //La commande ci -dessous est plus correcte, car sinon on affiche
         //quand-meme la commande jobs en tapant seulement j
         if (! strncmp(line, "jobs", 4)){ 
-			print_jobs(jobs); 
+			print_jobs(&jobs);
 			free(line);
 			continue;
 		}

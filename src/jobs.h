@@ -24,6 +24,6 @@ struct S_List{
 /*fonction pour la liste*/
 void free_list(List *liste);
 void create_job(pid_t pid, char *cmd, int id, List **jobs);
-void print_jobs(List *jobs);
+void print_jobs(List **jobs);
 
 #endif
