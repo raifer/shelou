@@ -52,7 +52,7 @@ SCM executer_wrapper(SCM x)
 #endif
 
 
-void terminate(char *line) {
+void terminate(char *line, List *jobs) {
 #if USE_GNU_READLINE == 1
 	/* rl_clear_history() does not exist yet in centOS 6 */
 	clear_history();
@@ -137,7 +137,7 @@ int main() {
 
 		// Si erreur ou mots clef exit
 		if (line == 0 || ! strncmp(line,"exit", 4)) {
-			terminate(line);
+			terminate(line, jobs);
 		}
 
 		// Si aucune commande a été entrée.
@@ -184,7 +184,7 @@ int main() {
 		/* If input stream closed, normal termination */
 		if (!l) {
 			//free(cmd);
-			terminate(0);
+			terminate(0, jobs);
 		}
 
 
