@@ -97,8 +97,9 @@ int execute(struct cmdline *l) {
 			perror("Wait error :");
 			return EXIT_FAILURE;
 		} else {
-			if (WIFEXITED(status)) printf("Le fils %d c'est terminé avec success avec comme code de retour %d\n", pidEnd, WEXITSTATUS(status));
-			else printf("Le fils %d a rencontrer une erreur\n", pidEnd);
+			//if (WIFEXITED(status)) printf("Le fils %d c'est terminé avec success avec comme code de retour %d\n", pidEnd, WEXITSTATUS(status));
+			//else printf("Le fils %d a rencontrer une erreur\n", pidEnd);
+			if (!WIFEXITED(status)) printf("Le fils %d a rencontrer une erreur\n", pidEnd);
 
 			if (WIFSIGNALED(status)) printf("Le fils %d c'est terminé à cause du signal n° %d : %s\n", pidEnd, WTERMSIG(status), strsignal(WTERMSIG(status)));
 			// printf("Wait à  terminé avec la fin du fils %d\n", pid_end);

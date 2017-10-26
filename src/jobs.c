@@ -30,10 +30,8 @@ return list;
 }
 // Supprime un élément de la liste et recole les morceaux.
 void del_elem(List **p_liste) {
-	printf("debug : On entre dans del_elem");
 	//si premier elem de la liste
 if ((*p_liste)->previous == NULL) {
-	printf("debug : on supp le premier elem de la liste");
         List *list_return = (*p_liste)->next;
         free_elem(*p_liste);
         *p_liste = list_return ;
