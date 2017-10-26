@@ -63,9 +63,15 @@ void terminate(char *line, List *jobs) {
 	printf("exit\n");
 	exit(0);
 }
+uint8_t nb_pipes(struct cmdline *l) {
+    uint8_t n = 0;
+    while(l->seq[n++]!=0);
+    return n-2;
+}
+
 /*Fonction qui exécute la commande passé en parametre
  * Retourne -1 si erreur*/
-int execute(struct cmdline *l) {
+int execute(char **seq, int infd, int outfd) {
 
 	// Variables pour récupérer le status et le pid du fils qui relache le wait() du père.
 	int status;
@@ -82,7 +88,9 @@ int execute(struct cmdline *l) {
 		// Child
 	case 0:
 		// execvp : v pour tableau de variable et p pour chercher dans le path.
-		execvp(l->seq[0][0], l->seq[0]);
+		dup2(infd, 0);
+        dup2(outfd, 1);
+        execvp(seq[0], seq);
 		perror("Erreur d'exec");
 		abort (); // Envoit le signal SIGABRT au père.
 		break;
@@ -92,6 +100,7 @@ int execute(struct cmdline *l) {
 		//printf("\nLe pid du fils est %d\n", pidChild);
 		// Si demande de background on attend pas la fin du fils
 		if (l->bg) return pidChild;
+
 		pidEnd = waitpid(pidChild,&status,0);
 		if (pidEnd == -1) {
 			perror("Wait error :");
@@ -106,6 +115,56 @@ int execute(struct cmdline *l) {
 			return EXIT_SUCCESS;
 		}
 	}
+}
+
+/* Création des pipes*/
+void execute_line(struct cmdline *l, List *jobs, int nombreBG) {
+        int outfd;
+        if(l->out == 0)
+            outfd = 1;
+        else
+            outfd = l->out ;
+
+        if( !nb_pipes(l)){
+            execute(l->seq[0], l->in, outfd);
+            return;
+        }
+        int *pipes = malloc(sizeof(int)*nb_pipes(l)*2);
+        int i, j ;
+        for (i = 0; i < nb_pipes(l); i++) {
+            if(pipe(&(pipes[i*2])) == -1) {
+                perror("Creation du pipe");
+                terminate(0, jobs);
+            }
+        }
+        execute(l->seq[0], l->in, pipes[0]);
+        for(i = 1; i < nb_pipes(l)+1; i++){
+            execute(l->seq[i], pipes[i*2-1], pipes[i*2]);
+        }
+
+        for(i = 0; i < nb_pipes(l)*2; i++){
+            if(!close(pipes[i]))
+                perror("Erreur close pipe");
+        }
+
+        free(pipes);
+		pid_t pid = execute(l);
+		char *cmd = NULL;
+		if(l->bg && pid > 0) {
+            cmd = calloc(200, sizeof(char));
+            for (i = 0; l->seq[i]!=0; i++) {
+                char **prg = l->seq[i];
+                if (i>0) strcat(cmd, "| ");
+                for(j = 0; prg[j]!=0; j++) {
+                	strcat(cmd, prg[j]);
+                        strcat(cmd, " ");
+                    }
+            }
+            // Ajout de & à la fin de la comande.
+                strcat(cmd, "&");
+			    printf("[%d], %s\n",nombreBG, cmd);
+        }
+		create_job(pid, cmd, nombreBG, &jobs);
 }
 
 int main() {
@@ -125,11 +184,9 @@ int main() {
 	while (1) {
 		struct cmdline *l;
 		char *line=NULL;
-		char *cmd = NULL;
 		char *prompt = "shelou>";
 
 		// pid du fils dans le cas d'un jobs
-		pid_t pid;
 
 		/* Readline use some internal memory structure that
 		   can not be cleaned at the end of the program. Thus
@@ -198,25 +255,9 @@ int main() {
 
 		if (l->in) printf("in: %s\n", l->in);
 		if (l->out) printf("out: %s\n", l->out);
-
-		pid = execute(l);
-
-		if(l->bg && pid > 0) {
-            cmd = calloc(200, sizeof(char));
-            for (int i = 0; l->seq[i]!=0; i++) {
-                char **prg = l->seq[i];
-                if (i>0) strcat(cmd, "| ");
-                for( int j = 0; prg[j]!=0; j++) {
-                	strcat(cmd, prg[j]);
-                        strcat(cmd, " ");
-                    }
-                }
-            // Ajout de & à la fin de la comande.
-                strcat(cmd, "&");
-			    printf("[%d], %s\n",nombreBG, cmd);
-            }
-		create_job(pid, cmd, nombreBG, &jobs);
-			nombreBG++;
+       
+        printf("nombre de pipes %d\n",nb_pipes(l));
+		execute_line(l, jobs, nombreBG++);
 
 	} // end while
 
