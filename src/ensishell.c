@@ -63,7 +63,7 @@ void terminate(char *line, List *jobs) {
         printf("exit\n");
         exit(0);
 }
-uint8_t nb_pipes(struct cmdline *l) {
+uint8_t get_nb_pipes(struct cmdline *l) {
         uint8_t n = 0;
         while(l->seq[n++]!=0);
         return n-2;
@@ -78,7 +78,6 @@ int execute(char **seq, int in, int out, int bg) {
         pid_t pidEnd;
 
         pid_t pidChild = fork();
-
         switch (pidChild) {
                 case -1 :
                         perror("Erreur lors de la création du processus fils :");
@@ -87,9 +86,16 @@ int execute(char **seq, int in, int out, int bg) {
 
                         // Child
                 case 0:
-                        // execvp : v pour tableau de variable et p pour chercher dans le path.
-                        dup2(in, 0);
-                        dup2(out, 1);
+                	/* Modification des I/O
+                	 * dup2 close new avant de copier
+                	 * dup2 ne ferme pas si les deux params sont identiques.
+                	 **/
+                    if( -1 == dup2(in, STDIN_FILENO) ) perror("dup2(in, stdin) error");
+                    if( -1 == dup2(out, STDOUT_FILENO) ) perror("dup2( out, stdout) perror");
+
+                        /* Remplacement du programme
+                         * execvp : v pour tableau de variable et p pour chercher dans le path.
+                         */
                         execvp(seq[0], seq);
                         perror("Erreur d'exec");
                         abort (); // Envoit le signal SIGABRT au père.
@@ -98,6 +104,10 @@ int execute(char **seq, int in, int out, int bg) {
                         // Father
                 default:
                         //printf("\nLe pid du fils est %d\n", pidChild);
+                	// fermetture des pipes
+                	if (in != STDIN_FILENO) close(in);
+                	if (out != STDOUT_FILENO) close(out);
+
                         // Si demande de background on attend pas la fin du fils
                         if (bg) return pidChild;
 
@@ -117,41 +127,55 @@ int execute(char **seq, int in, int out, int bg) {
         }
 }
 
-/* Création des pipes*/
 void execute_line(struct cmdline *l, List *jobs, int nombreBG) {
+
+	// Descripteurs des fichier
         int infd, outfd;
-        int i, j ;
+
+        // Pid du fils dans le cas d'un jobs
         pid_t pid;
-        
+        int i,j;
+        // Poiteur vers le tableau de pipes
+        int *pipes = NULL;
+
+        // Attribution de stdin et stdout si pas d'entré sortie spécifiques.
         if(l->out == NULL)
                 outfd = 1;
-        else
-                outfd = 0 ;
         if(l->in == NULL)
-                infd = 0;
+        	infd = 0;
 
-        if( !nb_pipes(l)){
+        uint8_t nb_pipes = get_nb_pipes(l);
+// Si commande simple sans pipe
+        if( !nb_pipes){
                 pid = execute(l->seq[0], infd, outfd, l->bg);
         }
+
+        // Execution avec des pipes
         else {
-                int *pipes = malloc(sizeof(int)*nb_pipes(l)*2);
-                for (i = 0; i < nb_pipes(l); i++) {
-                        if(pipe(&(pipes[i*2])) == -1) {
-                                perror("Creation du pipe");
+        	// Création des pipes
+                pipes = malloc(sizeof(int)*nb_pipes*2);
+                for (i = 0; i < nb_pipes; i++) {
+                        if( pipe(&(pipes[i*2])) == -1) {
+                        	perror("Creation du pipe");
+                                free(pipes);
                                 terminate(0, jobs);
                          }
+                        else { // On switch les l'entré sortie pour avoir l'entré en premier
+                        	int sav = pipes[i*2];
+                        	pipes[i*2] = pipes[i*2+1];
+                        	pipes[i*2+1] = sav;
+                        }
                 }
+
+                // Programme 0
                 execute(l->seq[0], infd, pipes[0], 1);
-                for(i = 1; i < nb_pipes(l); i++){
+
+                // Programme de 1 à n-2
+                for(i = 1; i < nb_pipes; i++){
                         execute(l->seq[i], pipes[i*2-1], pipes[i*2], 1);
                 }
-                execute(l->seq[i], pipes[i*2-1], pipes[i*2], l->bg);
-                
-                for(i = 0; i < nb_pipes(l)*2; i++){
-                         if(!close(pipes[i]))
-                                perror("Erreur close pipe");
-                }
-                free(pipes);
+                // Programme n-1
+                execute(l->seq[i], pipes[i*2-1], outfd, l->bg);
         }
 
         char *cmd = NULL;
@@ -169,8 +193,17 @@ void execute_line(struct cmdline *l, List *jobs, int nombreBG) {
                 // Ajout de & à la fin de la comande.
                 strcat(cmd, "&");
                 printf("[%d], %s\n",nombreBG, cmd);
+                /**********
+                 * WARNING
+                 * il faut passer pipes à create_job pour pouvoir free(pipes) après
+                 **********/
                 create_job(pid, cmd, nombreBG, &jobs);
         }
+        // Pas de BG
+        /*else {
+        	if (pipes != NULL)
+        	if( -1 == free(pipes)) perror("Free pipes table");
+        }*/
 }
 
 int main() {
@@ -262,7 +295,6 @@ int main() {
                 if (l->in) printf("in: %s\n", l->in);
                 if (l->out) printf("out: %s\n", l->out);
 
-                printf("nombre de pipes %d\n",nb_pipes(l));
                 execute_line(l, jobs, nombreBG++);
 
         } // end while
