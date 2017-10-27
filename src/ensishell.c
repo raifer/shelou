@@ -71,7 +71,7 @@ int main() {
 #endif
 
         // List chaînée des jobs.
-        List **p_jobs = NULL;
+        List *jobs = NULL;
         // nb d'appels en arrière-plan (pour affichage)
         int idJob = 1;
 
@@ -89,7 +89,7 @@ int main() {
 
                 // Si erreur ou mots clef exit
                 if (line == 0 || ! strncmp(line,"exit", 4)) {
-                        terminate(line, *p_jobs);
+                        terminate(line, jobs);
                 }
 
                 // Si aucune commande a été entrée.
@@ -109,7 +109,7 @@ int main() {
                 //La commande ci -dessous est plus correcte, car sinon on affiche
                 //quand-meme la commande jobs en tapant seulement j
                 if (! strncmp(line, "jobs", 4)){ 
-                        print_jobs(p_jobs);
+                        print_jobs(&jobs);
                         free(line);
                         continue;
                 }
@@ -136,7 +136,7 @@ int main() {
                 /* If input stream closed, normal termination */
                 if (!l) {
                         //free(cmd);
-                        terminate(0, *p_jobs);
+                        terminate(0, jobs);
                 }
 
 
@@ -150,7 +150,7 @@ int main() {
                 if (l->in) printf("in: %s\n", l->in);
                 if (l->out) printf("out: %s\n", l->out);
 
-                if( execute_line(l, p_jobs, idJob++) == EXIT_FAILURE) terminate(0, *p_jobs);
+                if( execute_line(l, jobs, idJob++) == EXIT_FAILURE) terminate(0, jobs);
 
         } // end while
 }

@@ -23,7 +23,7 @@ struct S_List{
 
 
 /*fonction pour la liste*/
-void add_job(pid_t pid, char *cmd, uint16_t idJob, List **p_jobs, int *pipes);
+void add_job(pid_t pid, char *cmd, uint16_t idJob, List *p_jobs, int *pipes);
 void free_list(List *liste);
 void print_jobs(List **jobs);
 
