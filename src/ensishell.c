@@ -200,10 +200,9 @@ void execute_line(struct cmdline *l, List *jobs, int nombreBG) {
                 create_job(pid, cmd, nombreBG, &jobs);
         }
         // Pas de BG
-        /*else {
-        	if (pipes != NULL)
-        	if( -1 == free(pipes)) perror("Free pipes table");
-        }*/
+        else {
+        	if (pipes != NULL) free(pipes);
+        }
 }
 
 int main() {
