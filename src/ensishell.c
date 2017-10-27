@@ -150,7 +150,7 @@ int main() {
                 if (l->in) printf("in: %s\n", l->in);
                 if (l->out) printf("out: %s\n", l->out);
 
-                if( execute_line(l, jobs, idJob++) == EXIT_FAILURE) terminate(0, jobs);
+                if( execute_line(l, &jobs, idJob++) == EXIT_FAILURE) terminate(0, jobs);
 
         } // end while
 }

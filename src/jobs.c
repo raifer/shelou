@@ -44,7 +44,7 @@ void del_elem(List **p_liste) {
         }
 }
 
-void add_job(pid_t pid, char *cmd, uint16_t idJob, List *p_jobs, int *pipes) {
+void add_job(pid_t pid, char *cmd, uint16_t idJob, List **p_jobs, int *pipes) {
 
 
 	                printf("[%d], %s\n",idJob, cmd);
@@ -53,7 +53,7 @@ void add_job(pid_t pid, char *cmd, uint16_t idJob, List *p_jobs, int *pipes) {
 	                        j->id = idJob;
 	                        j->pipes = pipes;
 	                        j->cmd = cmd;
-	                        p_jobs = list_prepend(p_jobs, j);
+	                        *p_jobs = list_prepend(*p_jobs, j);
 	                }
 
 void free_list(List *liste) {
@@ -87,7 +87,6 @@ void print_jobs(List **p_jobs){
                                 /* Erreur, le fils n'éxiste plus et il n'y a pas de signal en attentes.
                                  * On supprime le job de la liste
                                  */
-                                printf("debug case -1 : On supprime le job %d\n", jobs->job->id);
                                 //			perror("Wait error :");
                                 // Si on est sur le premier elem
                                 if (*p_jobs == jobs){

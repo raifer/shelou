@@ -13,7 +13,7 @@
 
 // Execute la comande sous forme cmdline
 // return EXIT_FAILURE si erreur fatale
-int execute_line(struct cmdline *l, List *jobs, int idBG);
+int execute_line(struct cmdline *l, List **jobs, int idBG);
 
 
 #endif /* SRC_EXECUTE_H_ */

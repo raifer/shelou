@@ -27,7 +27,7 @@ uint8_t get_nb_pipes(struct cmdline *l) {
 }
 
 
-int execute_line(struct cmdline *l, List *p_jobs, int idJob) {
+int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 	// Descripteurs des fichier
 	int infd, outfd;
 
