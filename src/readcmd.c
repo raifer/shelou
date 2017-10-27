@@ -352,3 +352,24 @@ error:
 	}
 	return s;
 }
+
+
+char *get_cmd_line(struct cmdline *l) {
+	char *cmd = NULL;
+	cmd = calloc(200, sizeof(char));
+	if (cmd == NULL)
+		perror("Error lors du malloc de la string cmd");
+
+		for (int i = 0; l->seq[i]!=0; i++) {
+			char **prg = l->seq[i];
+			if (i>0) strcat(cmd, "| ");
+		                        for(int j = 0; prg[j]!=0; j++) {
+		                                strcat(cmd, prg[j]);
+		                                strcat(cmd, " ");
+		                        }
+		                }
+		                // Ajout de & à la fin de la comande.
+		                strcat(cmd, "&");
+		                return cmd;
+}
+

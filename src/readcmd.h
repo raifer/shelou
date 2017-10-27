@@ -12,8 +12,6 @@
 #ifndef __READCMD_H
 #define __READCMD_H
 
-
-
 /* If GNU Readline is not available, internal readline will be used*/
 #include "variante.h"
 
@@ -51,4 +49,8 @@ A sequence is an array of commands (char ***), whose last item is a null
 pointer.
 When the user enters an empty line, seq[0] is NULL.
 */
+// Ajout perso
+char *get_cmd_line(struct cmdline *l);
+
+
 #endif

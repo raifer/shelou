@@ -44,14 +44,15 @@ void del_elem(List **p_liste) {
         }
 }
 
-void create_job(pid_t pid, char *cmd, int id, List **jobs) {
-        Job *j = malloc(sizeof(Job));
-        j->pid = pid;
-        j->id = id;
-        // cmd pointe vers un espace mémoire crée dans le main et sera libéré dans freeElem()
-        j->cmd = cmd;
-        *jobs = list_prepend(*jobs, j); 
-}
+void add_job(pid_t pid, char *cmd, uint16_t idJob, List **p_jobs, int *pipes) {
+	                printf("[%d], %s\n",idJob, cmd);
+	                        Job *j = malloc(sizeof(Job));
+	                        j->pid = pid;
+	                        j->id = idJob;
+	                        j->pipes = pipes;
+	                        j->cmd = cmd;
+	                        *p_jobs = list_prepend(*p_jobs, j);
+	                }
 
 void free_list(List *liste) {
         for(List *cur = liste; cur != NULL; ){

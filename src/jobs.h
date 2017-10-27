@@ -10,6 +10,7 @@ struct S_job {
         char *cmd;	/* If not null : name of command written */
         uint16_t id;       /* Save the number of the call-system in background */
 	pid_t pid;	/* Save the pid of process*/
+	int *pipes; // Poiteur vers le tableau des pipes qui permet de free lorssque le job est terminé.
 } ;
 
 typedef struct S_List List;
@@ -22,8 +23,8 @@ struct S_List{
 
 
 /*fonction pour la liste*/
+void add_job(pid_t pid, char *cmd, uint16_t idJob, List **p_jobs, int *pipes);
 void free_list(List *liste);
-void create_job(pid_t pid, char *cmd, int id, List **jobs);
 void print_jobs(List **jobs);
 
 #endif
