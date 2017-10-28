@@ -37,7 +37,7 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 	// Poiteur vers le tableau de pipes
 	int *pipes = NULL;
 
-	// Attribution de stdin et stdout si pas d'entré sortie spécifiques.
+	// Attribution de stdin et stdout
 	if(l->out == NULL) {
 		outfd = 1;
 	} else {
@@ -53,8 +53,21 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 		}
 	}
 
-	if(l->in == NULL)
-		infd = 0;
+	// In
+	if(l->in == NULL) {
+			infd = 0;
+		} else {
+			/* On ouvre le fichier en lecture seul,
+			 * Si il existe pas : erreur
+			 */
+			infd = open(l->in, O_RDONLY);
+			if (infd == -1) {
+				fprintf(stderr, "Fichier : '%s'\n", l->in);
+				perror("");
+				return EXIT_FAILURE;
+			}
+		}
+
 
 	uint8_t nb_pipes = get_nb_pipes(l);
 	// Si commande simple sans pipe

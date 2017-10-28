@@ -54,7 +54,8 @@ void terminate(char *line, List *jobs) {
         /* rl_clear_history() does not exist yet in centOS 6 */
         clear_history();
 #endif
-        if (jobs) free_list(jobs);
+        if (jobs)
+        	free_list(jobs);
         if (line)
                 free(line);
         printf("exit\n");
@@ -146,9 +147,6 @@ int main() {
                         printf("error: %s\n", l->err);
                         continue;
                 }
-
-                if (l->in) printf("in: %s\n", l->in);
-                if (l->out) printf("out: %s\n", l->out);
 
                 execute_line(l, &jobs, idJob++);
 
