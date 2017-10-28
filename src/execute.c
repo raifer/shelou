@@ -45,9 +45,10 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 
 	uint8_t nb_pipes = get_nb_pipes(l);
 	// Si commande simple sans pipe
-	if( !nb_pipes){
+	if(nb_pipes == 0){
 		pid = execute(l->seq[0], infd, outfd, l->bg);
 		if (pid == EXIT_FAILURE) return EXIT_FAILURE;
+
 	}
 
 	// Execution avec des pipes
@@ -77,7 +78,6 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 			free(pipes);
 			return EXIT_FAILURE;
 		}
-		}
 
 		// Programme de 1 à n-2
 		for(int i = 1; i < nb_pipes; i++){
@@ -93,8 +93,7 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 			free(pipes);
 			return EXIT_FAILURE;
 		}
-
-
+	}
 	//Si le champs bg est activé => appel de create_jobs
 	if(l->bg && pid > 0) {
 		char *cmd = get_cmd_line(l);
