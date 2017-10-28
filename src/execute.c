@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-//#include <string.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -38,8 +38,21 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 	int *pipes = NULL;
 
 	// Attribution de stdin et stdout si pas d'entré sortie spécifiques.
-	if(l->out == NULL)
+	if(l->out == NULL) {
 		outfd = 1;
+	} else {
+		/* On ouvre le fichier en écriture,
+		 * Si il existe pas, on le créer,
+		 * si il existe, on le tronque
+		 */
+		outfd = open(l->out, O_WRONLY | O_TRUNC | O_CREAT);
+		if (outfd == -1) {
+			perror("Erreur lors de l'ouverture");
+			fprintf(stderr, "Fichier : '%s'\n", l->in);
+			return EXIT_FAILURE;
+		}
+	}
+
 	if(l->in == NULL)
 		infd = 0;
 
@@ -102,7 +115,7 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 	else {
 		// Les pgs sont finis, on free les pipes.
 		if (pipes != NULL) free(pipes);
-}
+	}
 	return EXIT_SUCCESS;
 }
 
