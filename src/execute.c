@@ -7,9 +7,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-//#include <string.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -38,8 +39,14 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 	int *pipes = NULL;
 
 	// Attribution de stdin et stdout si pas d'entré sortie spécifiques.
-	if(l->out == NULL)
+	if(l->out == NULL) {
 		outfd = 1;
+	} else {
+			outfd = open(l->out, O_WRONLY || O_TRUNC || O_CREAT);
+			if (outfd == -1) {
+				perror("Erreur de redirection de sortie");
+			}
+	}
 	if(l->in == NULL)
 		infd = 0;
 
@@ -129,8 +136,16 @@ int execute(char **seq, int in, int out, int bg) {
 		 * dup2 close new avant de copier
 		 * dup2 ne ferme pas si les deux params sont identiques.
 		 **/
-		if( -1 == dup2(in, STDIN_FILENO) ) perror("dup2(in, stdin) error");
-		if( -1 == dup2(out, STDOUT_FILENO) ) perror("dup2( out, stdout) perror");
+		// IN
+		if( -1 == dup2(in, STDIN_FILENO) ) {
+			perror("dup2(in, stdin) error");
+			return EXIT_FAILURE;
+		}
+		// Out
+		if( -1 == dup2(out, STDOUT_FILENO) ) {
+			perror("dup2( out, stdout) perror");
+			return EXIT_FAILURE;
+		}
 
 		/* Remplacement du programme
 		 * execvp : v pour tableau de variable et p pour chercher dans le path.
