@@ -33,6 +33,7 @@ void del_elem(List **p_liste) {
         //si premier elem de la liste
         if ((*p_liste)->previous == NULL) {
                 List *list_return = (*p_liste)->next;
+                if (list_return != NULL) list_return->previous = NULL;
                 free_elem(*p_liste);
                 *p_liste = list_return ;
         }
@@ -87,6 +88,7 @@ void print_jobs(List **p_jobs){
                                 /* Erreur, le fils n'éxiste plus et il n'y a pas de signal en attentes.
                                  * On supprime le job de la liste
                                  */
+                                //printf("debug case -1 : On supprime le job %d\n", jobs->job->id);
                                 //			perror("Wait error :");
                                 // Si on est sur le premier elem
                                 if (*p_jobs == jobs){
