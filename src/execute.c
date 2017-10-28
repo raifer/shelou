@@ -72,15 +72,27 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 		}
 
 		// Programme 0
-		execute(l->seq[0], infd, pipes[0], 1);
+		pid = execute(l->seq[0], infd, pipes[0], 1);
+		if (pid == EXIT_FAILURE) {
+			free(pipes);
+			return EXIT_FAILURE;
+		}
+		}
 
 		// Programme de 1 à n-2
 		for(int i = 1; i < nb_pipes; i++){
-			execute(l->seq[i], pipes[i*2-1], pipes[i*2], 1);
+			pid = execute(l->seq[i], pipes[i*2-1], pipes[i*2], 1);
+			if (pid == EXIT_FAILURE) {
+				free(pipes);
+				return EXIT_FAILURE;
+			}
 		}
 		// Programme n-1
-		execute(l->seq[nb_pipes], pipes[nb_pipes*2-1], outfd, l->bg);
-	}
+		pid = execute(l->seq[nb_pipes], pipes[nb_pipes*2-1], outfd, l->bg);
+		if (pid == EXIT_FAILURE) {
+			free(pipes);
+			return EXIT_FAILURE;
+		}
 
 
 	//Si le champs bg est activé => appel de create_jobs

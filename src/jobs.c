@@ -68,6 +68,8 @@ void free_list(List *liste) {
 
 void free_elem(List *p_liste) {
         free(p_liste->job->cmd);
+        if (p_liste->job->pipes != NULL)
+        free(p_liste->job->pipes);
         free(p_liste->job);
         free(p_liste);
 }
