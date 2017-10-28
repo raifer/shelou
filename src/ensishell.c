@@ -118,8 +118,10 @@ int main() {
 #if USE_GUILE == 1
                 /* The line is a scheme command */
                 if (line[0] == '(') {
+                	printf("Guile détecté\n");
                         char catchligne[strlen(line) + 256];
                         sprintf(catchligne, "(catch #t (lambda () %s) (lambda (key . parameters) (display \"mauvaise expression/bug en scheme\n\")))", line);
+                        printf("catchligne : '%s'\n", catchligne);
                         scm_eval_string(scm_from_locale_string(catchligne));
                         free(line);
                         continue;
