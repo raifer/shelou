@@ -72,7 +72,7 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 	uint8_t nb_pipes = get_nb_pipes(l);
 	// Si commande simple sans pipe
 	if(nb_pipes == 0){
-		pid = execute(l->seq[0], infd, outfd, l->bg);
+                pid = execute(l->seq[0], infd, outfd, l->bg);
 		if (pid == EXIT_FAILURE) return EXIT_FAILURE;
 
 	}
