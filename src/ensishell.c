@@ -35,9 +35,12 @@ int question6_executer(char *line)
          * pipe and i/o redirection are not required.
          */
         printf("Not implemented yet: can not execute %s\n", line);
-
+       // char *prompt = "guile";
+        struct cmdline *l = parsecmd(&line);
+        List *jobs = NULL;
+        execute(l->seq[0],0,1,0);
         /* Remove this line when using parsecmd as it will free it */
-        free(line);
+        //free(line);
 
         return 0;
 }
@@ -87,7 +90,6 @@ int main() {
                    can not be cleaned at the end of the program. Thus
                    one memory leak per command seems unavoidable yet */
                 line = readline(prompt);
-
                 // Si erreur ou mots clef exit
                 if (line == 0 || ! strncmp(line,"exit", 4)) {
                         terminate(line, jobs);
@@ -114,6 +116,7 @@ int main() {
                         free(line);
                         continue;
                 }
+                printf("line[] = %c\n",line[0]);
 
 #if USE_GUILE == 1
                 /* The line is a scheme command */
