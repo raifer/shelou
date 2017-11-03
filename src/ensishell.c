@@ -85,6 +85,8 @@ List *j = jobs;
 while (j != NULL) {
 	if (pid == j->job->pid)
 		printf("\nLe job %d : '%s', vient  de se terminer", j->job->id, j->job->cmd);
+	// On enregistre le statu de retour dans le job pour affichage ultérieur
+	j->job->status = status;
 	j = j->next;
 }
 if (WIFEXITED(status)) {

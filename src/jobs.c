@@ -1,9 +1,9 @@
+#include "jobs.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
-
-#include "jobs.h"
 
 #define CMD_MAX 200
 
@@ -85,20 +85,42 @@ void print_jobs(List **p_jobs){
 
                 // Fetch Status of child
                 pid_t pid = waitpid(jobs->job->pid, &status, WNOHANG);
+
                 switch (pid) {
                         case -1 :
-                                /* Erreur, le fils n'éxiste plus et il n'y a pas de signal en attentes.
-                                 * On supprime le job de la liste
+                                /* le fils n'éxiste plus et il n'y a pas de signal en attentes.
+                                 * On affiche ça terminaison puis on le  supprime de la liste des jobs
                                  */
-                                //printf("debug case -1 : On supprime le job %d\n", jobs->job->id);
-                                //			perror("Wait error :");
-                                // Si on est sur le premier elem
+
+                        	// Afichage du job terminé
+                        	status = jobs->job->status;
+                        	// si le fils s'est terminé normalement,
+                        	                                if (WIFEXITED(status)) {
+                        	                                        printf("[%d] pid %d | %s | Finish with code %d\n",
+                        	                                               jobs->job->id,
+                        	                                               jobs->job->pid,
+                        	                                               jobs->job->cmd,
+                        	                                               WEXITSTATUS(status));
+                        	                                }
+                        	                                // si le fils s'est terminé à cause d'un signal.
+                        	                                if (WIFSIGNALED(status)) {
+                        	                                        printf("[%d] pid %d | %s | Finish with error - signal n°%d: %s\n",
+                        	                                               jobs->job->id,
+                        	                                               jobs->job->pid,
+                        	                                               jobs->job->cmd,
+                        	                                               WTERMSIG(status),
+                        	                                               strsignal(WTERMSIG(status)));
+                        	                                }
+
+                        	// Suppression du job
+                                // Si on est sur le premier elem, il faudra mettre à jour le pointeur vers la liste
                                 if (*p_jobs == jobs){
                                         del_elem(p_jobs);
                                         jobs = *p_jobs;
-                                } else del_elem(&jobs);
-
+                                } else // Sinon pas besoin de mettre à jour le pointeur
+                                	del_elem(&jobs);
                                 break;
+
                         case 0 :
                                 /* Le pid n'a pas changé d'état depuis la dernière fois.
                                  * On le considère actif.
@@ -108,8 +130,12 @@ void print_jobs(List **p_jobs){
                                 break;
 
                         default :
-                                /* Le fils à changé de status.
+                                /* Le fils c'est terminé depuis la dernière fois.
+                                 * comme la gestion asynchrone est utilisé, on ne peut capter le signal ici,
+                                 * waitpid aura toujours 0 ou -1 comme code de retour
+                                 * on laisse pour restter compatible si on sup l'asynchrone.
                                  */
+
                                 // si le fils s'est terminé normalement,
                                 if (WIFEXITED(status)) {
                                         printf("[%d] pid %d | %s | Finish with code %d\n",

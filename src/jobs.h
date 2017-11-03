@@ -10,6 +10,7 @@ struct S_job {
         char *cmd;	/* If not null : name of command written */
         uint16_t id;       /* Save the number of the call-system in background */
 	pid_t pid;	/* Save the pid of process*/
+	int status; // Permet de sauvegarder le status renvoyer par waitpid pour un affichage par la commande jobs
 	int *pipes; // Poiteur vers le tableau des pipes qui permet de free lorssque le job est terminé.
 } ;
 
