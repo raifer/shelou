@@ -15,6 +15,10 @@
 #include "jobs.h"
 #include "execute.h"
 
+// Variables globales
+// List chaînée des jobs.
+        List *jobs = NULL;
+
 #ifndef VARIANTE
 #error "Variante non défini !!"
 #endif
@@ -63,39 +67,51 @@ void terminate(char *line, List *jobs) {
         exit(0);
 }
 
-void hand(int sig) {
+void handle_sigchld(int sig) {
 	pid_t pid = 0;
 	int status = 0;
-printf("\nOn entre dans le handle de SIGCHLD\n");
 
+	// On regarde si un fils à belle et bien finit
 pid = waitpid(0, &status, WNOHANG);
+
+// Si plus de fils vivant ou aucun fils n'a transmis de signal
 if (pid == -1) {
-	printf("handle : on a été appelé par la fin d'un pg en premier plan\n");
+//	printf("handle : on a été appelé par la fin d'un pg en premier plan\n");
 	return;
 }
 
-// On a été appelé par un fils qui était en arrière plan.
-printf("Handle : Le pid retourné par wait est %d\n", pid);
-printf("Handle : Le satus est %d\n", status);
-if (WIFEXITED(status)) printf("Handle : Le fils %d c'est terminé avec success avec comme code de retour %d\n", pid, WEXITSTATUS(status));
-			else printf("Handle : Le fils %d a rencontrer une erreur\n", pid);
-
+// On a été appelé par un fils qui était en arrière plan et quie a terminé.
+List *j = jobs;
+while (j != NULL) {
+	if (pid == j->job->pid)
+		printf("\nLe job %d : '%s', vient  de se terminer", j->job->id, j->job->cmd);
+	j = j->next;
+}
+if (WIFEXITED(status)) {
+	printf(" correctement avec comme code de retour %d\n", WEXITSTATUS(status));
+}
+			else if (WIFSIGNALED(status)) {
+				printf(" avec une erreur, signal reçu n° %d : %s\n", WTERMSIG(status), strsignal(WTERMSIG(status)));
+			}
+printf("> ");
+fflush(stdout);
 return;
 }
 
 int main() {
         printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
-signal(SIGCHLD, hand);
+
 #if USE_GUILE == 1
         scm_init_guile();
         /* register "executer" function in scheme */
         scm_c_define_gsubr("executer", 1, 0, 0, executer_wrapper);
 #endif
 
-        // List chaînée des jobs.
-        List *jobs = NULL;
         // nb d'appels en arrière-plan (pour affichage)
         int idJob = 1;
+
+        // Création du handle qui va gérer la fin des jobs, question 7.4
+        signal(SIGCHLD, handle_sigchld);
 
         while (1) {
                 struct cmdline *l;
