@@ -187,7 +187,9 @@ int main() {
                         continue;
                 }
 
-                execute_line(l, &jobs, idJob++);
+                execute_line(l, &jobs, idJob);
 
+                // Si c'était une commande en arrière plan, on incrémente le numéro du job.
+if (l->bg) idJob++;
         } // end while
 }
