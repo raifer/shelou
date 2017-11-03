@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -62,9 +63,29 @@ void terminate(char *line, List *jobs) {
         exit(0);
 }
 
+void hand(int sig) {
+	pid_t pid = 0;
+	int status = 0;
+printf("\nOn entre dans le handle de SIGCHLD\n");
+
+pid = waitpid(0, &status, WNOHANG);
+if (pid == -1) {
+	printf("handle : on a été appelé par la fin d'un pg en premier plan\n");
+	return;
+}
+
+// On a été appelé par un fils qui était en arrière plan.
+printf("Handle : Le pid retourné par wait est %d\n", pid);
+printf("Handle : Le satus est %d\n", status);
+if (WIFEXITED(status)) printf("Handle : Le fils %d c'est terminé avec success avec comme code de retour %d\n", pid, WEXITSTATUS(status));
+			else printf("Handle : Le fils %d a rencontrer une erreur\n", pid);
+
+return;
+}
+
 int main() {
         printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
-
+signal(SIGCHLD, hand);
 #if USE_GUILE == 1
         scm_init_guile();
         /* register "executer" function in scheme */
