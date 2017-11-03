@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <pthread.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -66,38 +67,46 @@ void terminate(char *line, List *jobs) {
         printf("exit\n");
         exit(0);
 }
+void *asynchronous_print_thread(void* arg) {
+	pid_t pid = 0;
+		int status = 0;
+
+		// On regarde si un fils à belle et bien finit
+	pid = waitpid(0, &status, WNOHANG);
+
+
+	// Si plus de fils vivant ou aucun fils n'a transmis de signal
+	if (pid == -1) {
+	//	printf("handle : on a été appelé par la fin d'un pg en premier plan\n");
+	}
+	else {
+	// On a été appelé par un fils qui était en arrière plan et quie a terminé.
+	List *j = jobs;
+	while (j != NULL) {
+		if (pid == j->job->pid)
+			printf("\nLe job %d : '%s', vient  de se terminer", j->job->id, j->job->cmd);
+		// On enregistre le statu de retour dans le job pour affichage ultérieur
+		j->job->status = status;
+		j = j->next;
+	}
+	if (WIFEXITED(status)) {
+		printf(" correctement avec comme code de retour %d\n", WEXITSTATUS(status));
+	}
+				else if (WIFSIGNALED(status)) {
+					printf(" avec une erreur, signal reçu n° %d : %s\n", WTERMSIG(status), strsignal(WTERMSIG(status)));
+				}
+	printf("> ");
+	fflush(stdout);
+	}
+	pthread_exit(NULL);
+}
 
 void handle_sigchld(int sig) {
-	pid_t pid = 0;
-	int status = 0;
-
-	// On regarde si un fils à belle et bien finit
-pid = waitpid(0, &status, WNOHANG);
-
-// Si plus de fils vivant ou aucun fils n'a transmis de signal
-if (pid == -1) {
-//	printf("handle : on a été appelé par la fin d'un pg en premier plan\n");
+	pthread_t thread1;
+	if(pthread_create(&thread1, NULL, asynchronous_print_thread, NULL) == -1) {
+		perror("pthread_create");
+	}
 	return;
-}
-
-// On a été appelé par un fils qui était en arrière plan et quie a terminé.
-List *j = jobs;
-while (j != NULL) {
-	if (pid == j->job->pid)
-		printf("\nLe job %d : '%s', vient  de se terminer", j->job->id, j->job->cmd);
-	// On enregistre le statu de retour dans le job pour affichage ultérieur
-	j->job->status = status;
-	j = j->next;
-}
-if (WIFEXITED(status)) {
-	printf(" correctement avec comme code de retour %d\n", WEXITSTATUS(status));
-}
-			else if (WIFSIGNALED(status)) {
-				printf(" avec une erreur, signal reçu n° %d : %s\n", WTERMSIG(status), strsignal(WTERMSIG(status)));
-			}
-printf("> ");
-fflush(stdout);
-return;
 }
 
 int main() {
