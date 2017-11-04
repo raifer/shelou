@@ -27,6 +27,7 @@
 #if USE_GUILE == 1
 #include <libguile.h>
 
+void terminate(char *line, List *jobs) ;
 int question6_executer(char *line)
 {
         /* Question 6: Insert your code to execute the command line
@@ -34,14 +35,17 @@ int question6_executer(char *line)
          * parsecmd, then fork+execvp, for a single command.
          * pipe and i/o redirection are not required.
          */
-        printf("Not implemented yet: can not execute %s\n", line);
+        //printf("Not implemented yet: can not execute %s\n", line);
        // char *prompt = "guile";
         struct cmdline *l = parsecmd(&line);
         List *jobs = NULL;
-        execute(l->seq[0],0,1,0);
+        if (!l) {
+                //free(cmd);
+                terminate(0, jobs);
+        }
+        execute_line(l,&jobs,0);
         /* Remove this line when using parsecmd as it will free it */
         //free(line);
-
         return 0;
 }
 
@@ -70,6 +74,7 @@ int main() {
 
 #if USE_GUILE == 1
         scm_init_guile();
+        printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
         /* register "executer" function in scheme */
         scm_c_define_gsubr("executer", 1, 0, 0, executer_wrapper);
 #endif
@@ -116,7 +121,6 @@ int main() {
                         free(line);
                         continue;
                 }
-                printf("line[] = %c\n",line[0]);
 
 #if USE_GUILE == 1
                 /* The line is a scheme command */
