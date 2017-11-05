@@ -52,14 +52,14 @@ void del_elem(List **p_liste) {
 void add_job(pid_t pid, char *cmd, uint16_t idJob, List **p_jobs, int *pipes) {
 
 
-	                printf("[%d], %s\n",idJob, cmd);
-	                        Job *j = malloc(sizeof(Job));
-	                        j->pid = pid;
-	                        j->id = idJob;
-	                        j->pipes = pipes;
-	                        j->cmd = cmd;
-	                        *p_jobs = list_prepend(*p_jobs, j);
-	                }
+        printf("[%d], %s\n",idJob, cmd);
+        Job *j = malloc(sizeof(Job));
+        j->pid = pid;
+        j->id = idJob;
+        j->pipes = pipes;
+        j->cmd = cmd;
+        *p_jobs = list_prepend(*p_jobs, j);
+}
 
 void free_list(List *liste) {
         for(List *cur = liste; cur != NULL; ){
@@ -73,7 +73,7 @@ void free_list(List *liste) {
 void free_elem(List *p_liste) {
         free(p_liste->job->cmd);
         if (p_liste->job->pipes != NULL)
-        free(p_liste->job->pipes);
+                free(p_liste->job->pipes);
         free(p_liste->job);
         free(p_liste);
 }
@@ -96,33 +96,33 @@ void print_jobs(List **p_jobs){
                                  * On affiche ça terminaison puis on le  supprime de la liste des jobs
                                  */
 
-                        	// Afichage du job terminé
-                        	status = jobs->job->status;
-                        	// si le fils s'est terminé normalement,
-                        	                                if (WIFEXITED(status)) {
-                        	                                        printf("[%d] pid %d | %s | Finish with code %d\n",
-                        	                                               jobs->job->id,
-                        	                                               jobs->job->pid,
-                        	                                               jobs->job->cmd,
-                        	                                               WEXITSTATUS(status));
-                        	                                }
-                        	                                // si le fils s'est terminé à cause d'un signal.
-                        	                                if (WIFSIGNALED(status)) {
-                        	                                        printf("[%d] pid %d | %s | Finish with error - signal n°%d: %s\n",
-                        	                                               jobs->job->id,
-                        	                                               jobs->job->pid,
-                        	                                               jobs->job->cmd,
-                        	                                               WTERMSIG(status),
-                        	                                               strsignal(WTERMSIG(status)));
-                        	                                }
+                                // Afichage du job terminé
+                                status = jobs->job->status;
+                                // si le fils s'est terminé normalement,
+                                if (WIFEXITED(status)) {
+                                        printf("[%d] pid %d | %s | Finish with code %d\n",
+                                               jobs->job->id,
+                                               jobs->job->pid,
+                                               jobs->job->cmd,
+                                               WEXITSTATUS(status));
+                                }
+                                // si le fils s'est terminé à cause d'un signal.
+                                if (WIFSIGNALED(status)) {
+                                        printf("[%d] pid %d | %s | Finish with error - signal n°%d: %s\n",
+                                               jobs->job->id,
+                                               jobs->job->pid,
+                                               jobs->job->cmd,
+                                               WTERMSIG(status),
+                                               strsignal(WTERMSIG(status)));
+                                }
 
-                        	// Suppression du job
+                                // Suppression du job
                                 // Si on est sur le premier elem, il faudra mettre à jour le pointeur vers la liste
                                 if (*p_jobs == jobs){
                                         del_elem(p_jobs);
                                         jobs = *p_jobs;
                                 } else // Sinon pas besoin de mettre à jour le pointeur
-                                	del_elem(&jobs);
+                                        del_elem(&jobs);
                                 break;
 
                         case 0 :
@@ -169,37 +169,37 @@ void print_jobs(List **p_jobs){
  * puis affiche des infos sur le job se terminant.
  */
 void *asynchronous_print_thread(void* jobs) {
-	pid_t pid = 0;
-		int status = 0;
+        pid_t pid = 0;
+        int status = 0;
 
-		// On regarde si un fils à belle et bien finit
-	pid = waitpid(0, &status, WNOHANG);
+        // On regarde si un fils à belle et bien finit
+        pid = waitpid(0, &status, WNOHANG);
 
-	// Si plus de fils vivant ou aucun fils n'a transmis de signal
-	if (pid > 0) {
-	// On a été appelé par un fils qui était en arrière plan et quie a terminé.
-	List *j = jobs;
-	// On prend le mutex pour parccourir la liste chaînée des jobs
-	if (pthread_mutex_lock(&m_jobs) == -1) perror("Asynchrone_print_thread, eErreur lors de la prise du mutex m_jobs");
-	while (j != NULL) {
-		if (pid == j->job->pid)
-			printf("\nLe job %d : '%s', vient  de se terminer", j->job->id, j->job->cmd);
-		// On enregistre le statu de retour dans le job pour affichage ultérieur
-		j->job->status = status;
-		j = j->next;
-	}
-	// Relachement du mutex
-	if (pthread_mutex_unlock(&m_jobs) == -1) perror("Asynchrone_print_thread, erreur lors du relachement du mutex m_jobs");
+        // Si plus de fils vivant ou aucun fils n'a transmis de signal
+        if (pid > 0) {
+                // On a été appelé par un fils qui était en arrière plan et quie a terminé.
+                List *j = jobs;
+                // On prend le mutex pour parccourir la liste chaînée des jobs
+                if (pthread_mutex_lock(&m_jobs) == -1) perror("Asynchrone_print_thread, eErreur lors de la prise du mutex m_jobs");
+                while (j != NULL) {
+                        if (pid == j->job->pid)
+                                printf("\nLe job %d : '%s', vient  de se terminer", j->job->id, j->job->cmd);
+                        // On enregistre le statu de retour dans le job pour affichage ultérieur
+                        j->job->status = status;
+                        j = j->next;
+                }
+                // Relachement du mutex
+                if (pthread_mutex_unlock(&m_jobs) == -1) perror("Asynchrone_print_thread, erreur lors du relachement du mutex m_jobs");
 
-	if (WIFEXITED(status)) {
-		printf(" correctement avec comme code de retour %d\n", WEXITSTATUS(status));
-	}
-				else if (WIFSIGNALED(status)) {
-					printf(" avec une erreur, signal reçu n° %d : %s\n", WTERMSIG(status), strsignal(WTERMSIG(status)));
-				}
-	printf("> ");
-	fflush(stdout);
-	}
-	pthread_exit(NULL);
+                if (WIFEXITED(status)) {
+                        printf(" correctement avec comme code de retour %d\n", WEXITSTATUS(status));
+                }
+                else if (WIFSIGNALED(status)) {
+                        printf(" avec une erreur, signal reçu n° %d : %s\n", WTERMSIG(status), strsignal(WTERMSIG(status)));
+                }
+                printf("> ");
+                fflush(stdout);
+        }
+        pthread_exit(NULL);
 }
 
