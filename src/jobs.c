@@ -1,9 +1,10 @@
-#include "jobs.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+
+#include "jobs.h"
+#include "global.h"
 
 #define CMD_MAX 200
 

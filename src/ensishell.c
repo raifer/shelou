@@ -18,7 +18,10 @@
 
 // Variables globales
 // List chaînée des jobs.
-        List *jobs = NULL;
+        List *jobs_g = NULL;
+// Mutex pour la liste des jobs
+       pthread_mutex_t m_jobs;
+
 
 #ifndef VARIANTE
 #error "Variante non défini !!"
@@ -64,9 +67,13 @@ void terminate(char *line, List *jobs) {
         	free_list(jobs);
         if (line)
                 free(line);
+        // Destruction du mutex
+        pthread_mutex_destroy(&m_jobs);
         printf("exit\n");
         exit(0);
 }
+
+
 void *asynchronous_print_thread(void* arg) {
 	pid_t pid = 0;
 		int status = 0;
@@ -74,14 +81,12 @@ void *asynchronous_print_thread(void* arg) {
 		// On regarde si un fils à belle et bien finit
 	pid = waitpid(0, &status, WNOHANG);
 
-
 	// Si plus de fils vivant ou aucun fils n'a transmis de signal
-	if (pid == -1) {
-	//	printf("handle : on a été appelé par la fin d'un pg en premier plan\n");
-	}
-	else {
+	if (pid > 0) {
 	// On a été appelé par un fils qui était en arrière plan et quie a terminé.
-	List *j = jobs;
+	List *j = jobs_g;
+	// On prend le mutex pour parccourir la liste chaînée des jobs
+	if (pthread_mutex_lock(&m_jobs) == -1) perror("Asynchrone_print_thread, eErreur lors de la prise du mutex m_jobs");
 	while (j != NULL) {
 		if (pid == j->job->pid)
 			printf("\nLe job %d : '%s', vient  de se terminer", j->job->id, j->job->cmd);
@@ -89,6 +94,9 @@ void *asynchronous_print_thread(void* arg) {
 		j->job->status = status;
 		j = j->next;
 	}
+	// Relachement du mutex
+	if (pthread_mutex_unlock(&m_jobs) == -1) perror("Asynchrone_print_thread, erreur lors du relachement du mutex m_jobs");
+
 	if (WIFEXITED(status)) {
 		printf(" correctement avec comme code de retour %d\n", WEXITSTATUS(status));
 	}
@@ -123,6 +131,9 @@ int main() {
 
         // Création du handle qui va gérer la fin des jobs, question 7.4
         signal(SIGCHLD, handle_sigchld);
+        // Initialisation du mutex
+        // Bug avec la ligne suivante, je ne sais pas pourquoi.
+//        m_jobs = PTHREAD_MUTEX_INITIALIZER;
 
         while (1) {
                 struct cmdline *l;
@@ -138,7 +149,7 @@ int main() {
 
                 // Si erreur ou mots clef exit
                 if (line == 0 || ! strncmp(line,"exit", 4)) {
-                        terminate(line, jobs);
+                        terminate(line, jobs_g);
                 }
 
                 // Si aucune commande a été entrée.
@@ -154,11 +165,11 @@ int main() {
 
 
                 // Si la commande jobs est appelé
-                //if (line[0] == 'j') { 
-                //La commande ci -dessous est plus correcte, car sinon on affiche
-                //quand-meme la commande jobs en tapant seulement j
-                if (! strncmp(line, "jobs", 4)){ 
-                        print_jobs(&jobs);
+                if (! strncmp(line, "jobs", 4)){
+                	// On prend le mutex m_jobs
+                	pthread_mutex_lock(&m_jobs);
+                        print_jobs(&jobs_g);
+                        pthread_mutex_unlock(&m_jobs);
                         free(line);
                         continue;
                 }
@@ -185,7 +196,7 @@ int main() {
                 /* If input stream closed, normal termination */
                 if (!l) {
                         //free(cmd);
-                        terminate(0, jobs);
+                        terminate(0, jobs_g);
                 }
 
 
@@ -196,7 +207,7 @@ int main() {
                         continue;
                 }
 
-                execute_line(l, &jobs, idJob);
+                execute_line(l, &jobs_g, idJob);
 
                 // Si c'était une commande en arrière plan, on incrémente le numéro du job.
 if (l->bg) idJob++;

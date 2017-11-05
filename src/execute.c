@@ -12,21 +12,29 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include "variante.h"
 #include "readcmd.h"
 #include "jobs.h"
+#include "global.h"
 #include "execute.h"
 
 // Proto
 int execute(char **seq, int in, int out, int bg);
+
+/**
+ * Renvoie le nombres de pipes utilisés dans la commande
+ */
 uint8_t get_nb_pipes(struct cmdline *l) {
 	uint8_t n = 0;
 	while(l->seq[n++]!=0);
 	return n-2;
 }
 
-
+/**
+ * Lance l'ex"exécution de la commande fournie au prompte
+ */
 int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 	// Descripteurs des fichier
 	int infd, outfd;
@@ -39,10 +47,12 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 
 	// Attribution de stdin et stdout
 	if(l->out == NULL) {
+		// Pas de redirection, on prend stdout
 		outfd = 1;
 	} else {
-		/* On ouvre le fichier en écriture,
-		 * Si il existe pas, on le créer,
+		/* Redirection vers un fichier
+		 * On ouvre le fichier en écriture,
+		 * Si il n'existe pas, on le créer,
 		 * si il existe, on le tronque
 		 */
 		outfd = open(l->out, O_WRONLY | O_TRUNC | O_CREAT);
@@ -55,9 +65,11 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 
 	// In
 	if(l->in == NULL) {
+		// Pas de redirection, on prend stdin
 			infd = 0;
 		} else {
-			/* On ouvre le fichier en lecture seul,
+			/* On redirige l'entré standar depuis un fichier
+			 * On ouvre le fichier en lecture seul,
 			 * Si il existe pas : erreur
 			 */
 			infd = open(l->in, O_RDONLY);
@@ -74,10 +86,9 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 	if(nb_pipes == 0){
 		pid = execute(l->seq[0], infd, outfd, l->bg);
 		if (pid == EXIT_FAILURE) return EXIT_FAILURE;
-
 	}
 
-	// Execution avec des pipes
+	// Execution de plusieurs programmes liés par des pipes
 	else {
 		// Création des pipes
 		pipes = malloc(sizeof(int)*nb_pipes*2);
@@ -92,7 +103,7 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 				return EXIT_FAILURE;
 			}
 
-			// On switch les l'entré sortie pour avoir l'entré en premier
+			// On switch les l'entré sortie pour avoir l'entré en premier dans le tableau
 			int sav = pipes[i*2];
 			pipes[i*2] = pipes[i*2+1];
 			pipes[i*2+1] = sav;
@@ -120,10 +131,14 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 			return EXIT_FAILURE;
 		}
 	}
-	//Si le champs bg est activé => appel de create_jobs
+
+	// Si demande de traitement en arrière plan, on créer un jobs
 	if(l->bg && pid > 0) {
 		char *cmd = get_cmd_line(l);
+		// On prend le mutex sur la liste des jobs
+		pthread_mutex_lock(&m_jobs);
 		add_job(pid, cmd, idJob, p_jobs, pipes);
+		pthread_mutex_unlock(&m_jobs);
 	}
 	else {
 		// Les pgs sont finis, on free les pipes.
