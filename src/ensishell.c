@@ -23,68 +23,30 @@
        // pointeur sur la liste des jobs
                List *jobs = NULL;
 
-#ifndef VARIANTE
-#error "Variante non défini !!"
-#endif
+               // Prototypes
+               void terminate(char *line, List *jobs);
+               void handle_sigchld(int sig);
 
-/* Guile (1.8 and 2.0) is auto-detected by cmake */
-/* To disable Scheme interpreter (Guile support), comment the
- * following lines.  You may also have to comment related pkg-config
- * lines in CMakeLists.txt.
- */
 
 #if USE_GUILE == 1
 #include <libguile.h>
 
-int question6_executer(char *line)
-{
-        /* Question 6: Insert your code to execute the command line
-         * identically to the standard execution scheme:
-         * parsecmd, then fork+execvp, for a single command.
-         * pipe and i/o redirection are not required.
-         */
-        printf("Not implemented yet: can not execute %s\n", line);
+               int guile_executer(char *line) {
+            	   struct cmdline *l = parsecmd(&line);
+                       return execute_line(l,&jobs,0);
+               }
 
-        /* Remove this line when using parsecmd as it will free it */
-        free(line);
-
-        return 0;
-}
-
-SCM executer_wrapper(SCM x)
-{
-        return scm_from_int(question6_executer(scm_to_locale_stringn(x, 0)));
+SCM executer_wrapper(SCM x) {
+        return scm_from_int(guile_executer(scm_to_locale_stringn(x, 0)));
 }
 #endif
 
 
-void terminate(char *line, List *jobs) {
-#if USE_GNU_READLINE == 1
-        /* rl_clear_history() does not exist yet in centOS 6 */
-        clear_history();
-#endif
-        if (jobs)
-        	free_list(jobs);
-        if (line)
-                free(line);
-        // Destruction du mutex
-        pthread_mutex_destroy(&m_jobs);
-        printf("exit\n");
-        exit(0);
-}
-
-void handle_sigchld(int sig) {
-	pthread_t thread1;
-	if(pthread_create(&thread1, NULL, asynchronous_print_thread, jobs) == -1) {
-		perror("pthread_create");
-	}
-	return;
-}
-
-int main() {
+               int main() {
         printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
 
 #if USE_GUILE == 1
+        // Init de guile
         scm_init_guile();
         /* register "executer" function in scheme */
         scm_c_define_gsubr("executer", 1, 0, 0, executer_wrapper);
@@ -159,11 +121,9 @@ int main() {
 
                 /* If input stream closed, normal termination */
                 if (!l) {
-                        //free(cmd);
-                        terminate(0, jobs);
+                	perror("Error, parsecmd returned a NULL pointeur");
+                        terminate(NULL, jobs);
                 }
-
-
 
                 if (l->err) {
                         /* Syntax error, read another command */
@@ -177,3 +137,26 @@ int main() {
 if (l->bg) idJob++;
         } // end while
 }
+
+               void terminate(char *line, List *jobs) {
+               #if USE_GNU_READLINE == 1
+                       /* rl_clear_history() does not exist yet in centOS 6 */
+                       clear_history();
+               #endif
+                       if (jobs)
+                       	free_list(jobs);
+                       if (line)
+                               free(line);
+                       // Destruction du mutex
+                       pthread_mutex_destroy(&m_jobs);
+                       printf("exit\n");
+                       exit(0);
+               }
+
+               void handle_sigchld(int sig) {
+               	pthread_t thread1;
+               	if(pthread_create(&thread1, NULL, asynchronous_print_thread, jobs) == -1) {
+               		perror("pthread_create");
+               	}
+               	return;
+               }
