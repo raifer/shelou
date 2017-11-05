@@ -14,6 +14,10 @@
 #include "jobs.h"
 #include "execute.h"
 
+
+// Prototype
+void terminate(char *line, List *jobs);
+
 #ifndef VARIANTE
 #error "Variante non défini !!"
 #endif
@@ -27,7 +31,6 @@
 #if USE_GUILE == 1
 #include <libguile.h>
 
-void terminate(char *line, List *jobs) ;
 int question6_executer(char *line)
 {
         /* Question 6: Insert your code to execute the command line
@@ -35,7 +38,6 @@ int question6_executer(char *line)
          * parsecmd, then fork+execvp, for a single command.
          * pipe and i/o redirection are not required.
          */
-        //printf("Not implemented yet: can not execute %s\n", line);
        // char *prompt = "guile";
         struct cmdline *l = parsecmd(&line);
         List *jobs = NULL;
