@@ -2,9 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <pthread.h>
 
 #include "jobs.h"
-#include "global.h"
+
+// Récupération de le mutex global pour gérer la liste des jobs
+extern pthread_mutex_t m_jobs;
 
 #define CMD_MAX 200
 
@@ -159,3 +162,44 @@ void print_jobs(List **p_jobs){
                 }
         }
 }
+/**
+ * Thread lancé à la réception du signal SIGCHLD
+ * Il récupère le pid du job qui c'est terminé
+ * Il parrcou la liste des jobs pour trouver les infos
+ * puis affiche des infos sur le job se terminant.
+ */
+void *asynchronous_print_thread(void* jobs) {
+	pid_t pid = 0;
+		int status = 0;
+
+		// On regarde si un fils à belle et bien finit
+	pid = waitpid(0, &status, WNOHANG);
+
+	// Si plus de fils vivant ou aucun fils n'a transmis de signal
+	if (pid > 0) {
+	// On a été appelé par un fils qui était en arrière plan et quie a terminé.
+	List *j = jobs;
+	// On prend le mutex pour parccourir la liste chaînée des jobs
+	if (pthread_mutex_lock(&m_jobs) == -1) perror("Asynchrone_print_thread, eErreur lors de la prise du mutex m_jobs");
+	while (j != NULL) {
+		if (pid == j->job->pid)
+			printf("\nLe job %d : '%s', vient  de se terminer", j->job->id, j->job->cmd);
+		// On enregistre le statu de retour dans le job pour affichage ultérieur
+		j->job->status = status;
+		j = j->next;
+	}
+	// Relachement du mutex
+	if (pthread_mutex_unlock(&m_jobs) == -1) perror("Asynchrone_print_thread, erreur lors du relachement du mutex m_jobs");
+
+	if (WIFEXITED(status)) {
+		printf(" correctement avec comme code de retour %d\n", WEXITSTATUS(status));
+	}
+				else if (WIFSIGNALED(status)) {
+					printf(" avec une erreur, signal reçu n° %d : %s\n", WTERMSIG(status), strsignal(WTERMSIG(status)));
+				}
+	printf("> ");
+	fflush(stdout);
+	}
+	pthread_exit(NULL);
+}
+

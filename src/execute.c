@@ -17,8 +17,10 @@
 #include "variante.h"
 #include "readcmd.h"
 #include "jobs.h"
-#include "global.h"
 #include "execute.h"
+
+// Mutex extern pour gérer les jobs
+extern pthread_mutex_t m_jobs;
 
 // Proto
 int execute(char **seq, int in, int out, int bg);

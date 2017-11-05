@@ -17,11 +17,11 @@
 #include "execute.h"
 
 // Variables globales
-// List chaînée des jobs.
-        List *jobs_g = NULL;
 // Mutex pour la liste des jobs
        pthread_mutex_t m_jobs;
-
+// Variable global limitée à ce fichier
+       // pointeur sur la liste des jobs
+               List *jobs = NULL;
 
 #ifndef VARIANTE
 #error "Variante non défini !!"
@@ -73,45 +73,9 @@ void terminate(char *line, List *jobs) {
         exit(0);
 }
 
-
-void *asynchronous_print_thread(void* arg) {
-	pid_t pid = 0;
-		int status = 0;
-
-		// On regarde si un fils à belle et bien finit
-	pid = waitpid(0, &status, WNOHANG);
-
-	// Si plus de fils vivant ou aucun fils n'a transmis de signal
-	if (pid > 0) {
-	// On a été appelé par un fils qui était en arrière plan et quie a terminé.
-	List *j = jobs_g;
-	// On prend le mutex pour parccourir la liste chaînée des jobs
-	if (pthread_mutex_lock(&m_jobs) == -1) perror("Asynchrone_print_thread, eErreur lors de la prise du mutex m_jobs");
-	while (j != NULL) {
-		if (pid == j->job->pid)
-			printf("\nLe job %d : '%s', vient  de se terminer", j->job->id, j->job->cmd);
-		// On enregistre le statu de retour dans le job pour affichage ultérieur
-		j->job->status = status;
-		j = j->next;
-	}
-	// Relachement du mutex
-	if (pthread_mutex_unlock(&m_jobs) == -1) perror("Asynchrone_print_thread, erreur lors du relachement du mutex m_jobs");
-
-	if (WIFEXITED(status)) {
-		printf(" correctement avec comme code de retour %d\n", WEXITSTATUS(status));
-	}
-				else if (WIFSIGNALED(status)) {
-					printf(" avec une erreur, signal reçu n° %d : %s\n", WTERMSIG(status), strsignal(WTERMSIG(status)));
-				}
-	printf("> ");
-	fflush(stdout);
-	}
-	pthread_exit(NULL);
-}
-
 void handle_sigchld(int sig) {
 	pthread_t thread1;
-	if(pthread_create(&thread1, NULL, asynchronous_print_thread, NULL) == -1) {
+	if(pthread_create(&thread1, NULL, asynchronous_print_thread, jobs) == -1) {
 		perror("pthread_create");
 	}
 	return;
@@ -131,7 +95,7 @@ int main() {
 
         // Création du handle qui va gérer la fin des jobs, question 7.4
         signal(SIGCHLD, handle_sigchld);
-        // Initialisation du mutex
+        // Initialisation du mutex jobs
         // Bug avec la ligne suivante, je ne sais pas pourquoi.
 //        m_jobs = PTHREAD_MUTEX_INITIALIZER;
 
@@ -149,7 +113,7 @@ int main() {
 
                 // Si erreur ou mots clef exit
                 if (line == 0 || ! strncmp(line,"exit", 4)) {
-                        terminate(line, jobs_g);
+                        terminate(line, jobs);
                 }
 
                 // Si aucune commande a été entrée.
@@ -168,7 +132,7 @@ int main() {
                 if (! strncmp(line, "jobs", 4)){
                 	// On prend le mutex m_jobs
                 	pthread_mutex_lock(&m_jobs);
-                        print_jobs(&jobs_g);
+                        print_jobs(&jobs);
                         pthread_mutex_unlock(&m_jobs);
                         free(line);
                         continue;
@@ -196,7 +160,7 @@ int main() {
                 /* If input stream closed, normal termination */
                 if (!l) {
                         //free(cmd);
-                        terminate(0, jobs_g);
+                        terminate(0, jobs);
                 }
 
 
@@ -207,7 +171,7 @@ int main() {
                         continue;
                 }
 
-                execute_line(l, &jobs_g, idJob);
+                execute_line(l, &jobs, idJob);
 
                 // Si c'était une commande en arrière plan, on incrémente le numéro du job.
 if (l->bg) idJob++;
