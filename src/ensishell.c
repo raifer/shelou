@@ -18,7 +18,7 @@
 
 // Variables globales
 // Mutex pour la liste des jobs
-       pthread_mutex_t m_jobs;
+       pthread_mutex_t m_jobs = PTHREAD_MUTEX_INITIALIZER;
 // Variable global limitée à ce fichier
        // pointeur sur la liste des jobs
                List *jobs = NULL;
@@ -57,9 +57,6 @@ SCM executer_wrapper(SCM x) {
 
         // Création du handle qui va gérer la fin des jobs, question 7.4
         signal(SIGCHLD, handle_sigchld);
-        // Initialisation du mutex jobs
-        // Bug avec la ligne suivante, je ne sais pas pourquoi.
-//        m_jobs = PTHREAD_MUTEX_INITIALIZER;
 
         while (1) {
                 struct cmdline *l;
