@@ -5,6 +5,15 @@
  * Ce code est distribué sous la licence GPLv3+.     *
  *****************************************************/
 
+
+/*****************************************************
+ *****************************************************
+ * Lire le README pour avoir quelques infos          *
+ *           d'implémentation                        *
+ *****************************************************
+ ****************************************************/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -107,11 +116,6 @@ int main() {
             continue;
         }
 #endif
-
-        // Copy de la commande pour ne pas la perdre dans parse
-        //char *cmd = NULL ; 
-        // cmd = strcpy(cmd, line);
-        //char *cmd = "cmd generic";
 
         /* parsecmd free line and set it up to 0 */
         l = parsecmd( & line);

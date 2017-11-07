@@ -35,7 +35,7 @@ uint8_t get_nb_pipes(struct cmdline *l) {
 }
 
 /**
- * Lance l'ex"exécution de la commande fournie au prompte
+ * Lance l'exécution de la commande fournie au prompte
  */
 int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
     // Descripteurs des fichier
@@ -111,7 +111,7 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
                 return EXIT_FAILURE;
             }
 
-            // On switch les l'entré sortie pour avoir l'entré en premier dans le tableau
+            // On switch les entrée/sortie pour avoir l'entré en premier dans le tableau
             int sav = pipes[i*2];
             pipes[i*2] = pipes[i*2+1];
             pipes[i*2+1] = sav;
