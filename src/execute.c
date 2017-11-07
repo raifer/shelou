@@ -2,7 +2,7 @@
  * execute.c
  *
  *  Created on: 27 oct. 2017
- *      Author: raifer
+ *      Author: Mathieu Barbe && Gauthier Fidry 
  */
 
 #include <stdio.h>
@@ -61,7 +61,7 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
                 O_WRONLY
                 | O_TRUNC
                 | O_CREAT,
-                  S_IRUSR
+                S_IRUSR
                 | S_IWUSR
                 | S_IRGRP);
         if (outfd == -1) {

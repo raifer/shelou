@@ -2,7 +2,7 @@
  * execute.h
  *
  *  Created on: 27 oct. 2017
- *      Author: raifer
+ *      Author: Mathieu Barbe && Gauthier Fidry 
  */
 
 #ifndef SRC_EXECUTE_H_
