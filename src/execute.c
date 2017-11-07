@@ -57,7 +57,14 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 		 * Si il n'existe pas, on le créer,
 		 * si il existe, on le tronque
 		 */
-		outfd = open(l->out, O_WRONLY | O_TRUNC | O_CREAT);
+		outfd = open(l->out,
+				O_WRONLY
+				| O_TRUNC
+				| O_CREAT
+				| S_IRUSR
+				| S_IWUSR
+				| S_IRGRP
+				| S_IWGRP);
 		if (outfd == -1) {
 			perror("Erreur lors de l'ouverture");
 			fprintf(stderr, "Fichier : '%s'\n", l->in);
