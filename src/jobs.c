@@ -9,10 +9,16 @@
 // Récupération de le mutex global pour gérer la liste des jobs
 extern pthread_mutex_t m_jobs;
 
+// Constante indiquant le nombre max de caractère pour une commande, utilisée pour des questions de sécurité.
 #define CMD_MAX 200
 
+// Prototype
 void free_elem(List *p_liste) ;
 
+/**
+ * Créer une liste d'un seul élément
+ * lors de la création, le job passé en paramètre est placé dans l'élément
+ */
 List *create_liste(Job *job) {
     List *list = malloc(sizeof(list));
     if (list && job) {
@@ -23,6 +29,12 @@ List *create_liste(Job *job) {
     return list;   
 }
 
+
+/**
+ * Ajoute un élément en tête de liste
+ * dans ce noubelle élément, la référence du job sera enregistrée,
+ * le pointeur vers la liste sera mis à jour.
+ */
 List *list_prepend(List *old, Job *jobs){
     List *list = create_liste(jobs);
     if (list){
@@ -32,7 +44,12 @@ List *list_prepend(List *old, Job *jobs){
     }
     return list;
 }
-// Supprime un élément de la liste et recole les morceaux.
+
+/**
+ * Supprime et libère un élément de la liste,
+ * la liste est reconstitué,
+ * le si on sup le 1er élément, le pointeur de liste est donc mis à jour.
+ */
 void del_elem(List **p_liste) {
     //si premier elem de la liste
     if ((*p_liste)->previous == NULL) {
@@ -49,9 +66,16 @@ void del_elem(List **p_liste) {
     }
 }
 
+/**
+ * Créer un job et l'ajoute en tête de liste,
+ *
+ *@param pid_t pid : Le pid du job;
+ *@param char *cmd : La commande demandé par l'utilisateur;
+ *@param int uint16_t idJobs : L'id du job;
+ *@param List **p_jobs : Un poiteur vers la liste des jobs, qui pourra être mis à jour;
+ *@param int *pipes : Poiteur vers le tableau contenant les pipes du job, NULL si pas de pipe.
+ */
 void add_job(pid_t pid, char *cmd, uint16_t idJob, List **p_jobs, int *pipes) {
-
-
     printf("[%d], %s\n",idJob, cmd);
     Job *j = malloc(sizeof(Job));
     j->pid = pid;
@@ -61,15 +85,24 @@ void add_job(pid_t pid, char *cmd, uint16_t idJob, List **p_jobs, int *pipes) {
     *p_jobs = list_prepend(*p_jobs, j);
 }
 
+/**
+ * Libère toute la liste passée en paramètre,
+ * ainsi que son contenu.
+ */
 void free_list(List *liste) {
     for(List *cur = liste; cur != NULL; ){
         List *next = cur->next;
         free_elem(cur);
-        cur=next; //HYPER IMPORTANT !! PAS CUR->NEXT!!!!!
-        // Lancer Valgrind ./listecgainee
+        cur=next;
     }
 }
 
+/**
+ * Libère un élément de la liste ainsi que :,
+ * job->cmd;
+ * job->pipes;
+ * job.
+ */
 void free_elem(List *p_liste) {
     free(p_liste->job->cmd);
     if (p_liste->job->pipes != NULL)
@@ -78,11 +111,26 @@ void free_elem(List *p_liste) {
     free(p_liste);
 }
 
-
+/**
+ * Affiche les jobs en cours,
+ *
+ * Si pas de jobs, on affiche "No job".
+ *
+ * Si un job est en cours :
+ * 	- On indique son état.
+ *
+ * Si un job est terminé :
+ * 	- On indique qu'il a terminé;
+ * 	- on renseigne sur son code de retour;
+ * 	- on le supprime de la liste des jobs.
+ */
 void print_jobs(List **p_jobs){
+	// Si pas de job
     if (*p_jobs == NULL){
         printf("No job\n");
         return;}
+
+    // Parcour des jobs
     List *jobs = *p_jobs;
     while(jobs != NULL) {
         int status = 0;
@@ -162,11 +210,13 @@ void print_jobs(List **p_jobs){
         }
     }
 }
+
 /**
  * Thread lancé à la réception du signal SIGCHLD
- * Il récupère le pid du job qui c'est terminé
- * Il parrcou la liste des jobs pour trouver les infos
- * puis affiche des infos sur le job se terminant.
+ * récupération du pid du job qui c'est terminé
+ * parrcour de la liste des jobs pour trouver les infos complémentaires
+ * affiche des infos sur le job se terminant.
+ * enregistre le status de retour du job dans la liste des jobs.
  */
 void *asynchronous_print_thread(void* jobs) {
     pid_t pid = 0;
