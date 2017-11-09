@@ -35,7 +35,9 @@ uint8_t get_nb_pipes(struct cmdline *l) {
 }
 
 /**
- * Lance l'exécution de la commande fournie au prompte
+ * Lance l'exécution de la commande fournie au prompte,
+ * gestion de la redirection de l'entrée / sortie
+ * gestion des pipes
  */
 int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
     // Descripteurs des fichier
@@ -156,10 +158,16 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
 }
 
 
-/*Fonction qui exécute la commande passé en parametre
- * Retourne -1 si erreur*/
+/**
+ * Exécute la commande passé en parametre
+ * Retourne -1 si erreur
+ *
+ * @param char **seq : Tableau contenant la commande et ces paramètres;
+ * @param int in : id du descriteur de fichier dans la table des fichiers ouverts pour la redirection de l'entrée;
+ * ^param int out : id du descriteur de fichier dans la table des fichiers ouverts pour la redirection de la sortie;
+ * @param int bg : 0 - attente de la fin de la commande, 1 - exécution en arrière plan.
+ */
 int execute(char **seq, int in, int out, int bg) {
-
     // Variables pour récupérer le status et le pid du fils qui relache le wait() du père.
     int status;
     pid_t pidEnd;
