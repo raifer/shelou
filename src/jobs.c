@@ -219,11 +219,13 @@ void print_jobs(List **p_jobs){
  * enregistre le status de retour du job dans la liste des jobs.
  */
 void *asynchronous_print_thread(void* jobs) {
+	printf("thread\n");
+	fflush(stdout);
     pid_t pid = 0;
     int status = 0;
 
     // On regarde si un fils à belle et bien finit
-    pid = waitpid(0, &status, WNOHANG);
+//    pid = waitpid(0, &status, WNOHANG);
 
     // Si plus de fils vivant ou aucun fils n'a transmis de signal
     if (pid > 0) {

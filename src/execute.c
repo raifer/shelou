@@ -90,7 +90,6 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
         }
     }
 
-
     uint8_t nb_pipes = get_nb_pipes(l);
     // Si commande simple sans pipe
     if(nb_pipes == 0){
@@ -118,6 +117,7 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
             pipes[i*2] = pipes[i*2+1];
             pipes[i*2+1] = sav;
         }
+
 
         // Programme 0
         pid = execute(l->seq[0], infd, pipes[0], 1);
@@ -168,11 +168,15 @@ int execute_line(struct cmdline *l, List **p_jobs, int idJob) {
  * @param int bg : 0 - attente de la fin de la commande, 1 - exécution en arrière plan.
  */
 int execute(char **seq, int in, int out, int bg) {
+	printf("On entre dans execute bg : %d\n", bg);
+			fflush(stdout);
     // Variables pour récupérer le status et le pid du fils qui relache le wait() du père.
     int status;
     pid_t pidEnd;
 
     pid_t pidChild = fork();
+    printf("child : %d", pidChild);
+    fflush(stdout);
     switch (pidChild) {
         case -1 :
             perror("Erreur lors de la création du processus fils :");
@@ -198,15 +202,21 @@ int execute(char **seq, int in, int out, int bg) {
 
             // Father
         default:
-            //printf("\nLe pid du fils est %d\n", pidChild);
+            printf("\nLe pid du fils est %d\n", pidChild);
+            fflush(stdout);
             // fermetture des pipes
             if (in != STDIN_FILENO) close(in);
             if (out != STDOUT_FILENO) close(out);
 
             // Si demande de background on attend pas la fin du fils
             if (bg) return pidChild;
+            printf("Avant wait father\n");
+                    fflush(stdout);
 
             pidEnd = waitpid(pidChild,&status,0);
+            printf("après wait execute\n");
+                    fflush(stdout);
+
             if (pidEnd == -1) {
                 perror("Wait error :");
                 return EXIT_FAILURE;
